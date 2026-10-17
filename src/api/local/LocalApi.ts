@@ -3,6 +3,7 @@ import { buildPreview, collectAssetIds, COMMENT_MARK, emptyDocument, LOCAL_ASSET
 import { ApiError } from '../errors';
 import { atLeast } from '../roles';
 import { tokenStore } from '../tokenStore';
+import { checkSignUp, cleanComment, cleanName, cleanTitle } from '../validation';
 import type {
   Asset,
   CommentThread,
@@ -29,9 +30,6 @@ import { DEFAULT_ITERATIONS, hashPassword, randomToken, verifyPassword } from '.
 import { AVATAR_COLORS, seedDemoPeople } from './seed';
 
 const SESSION_DAYS = 30;
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const MAX_TITLE = 200;
-const MAX_COMMENT = 4000;
 
 export interface LocalApiOptions {
   storage?: Storage;
@@ -73,14 +71,8 @@ export class LocalApi implements ElumApi {
   }
 
   async signUp(input: SignUpInput): Promise<Session> {
-    const name = input.name.trim();
-    const email = input.email.trim();
+    const { name, email } = checkSignUp(input);
     const emailLower = email.toLowerCase();
-    if (!name) throw new ApiError('invalid', 'Enter your name.', { field: 'name' });
-    if (!EMAIL_RE.test(email)) throw new ApiError('invalid', 'Enter a valid email address.', { field: 'email' });
-    if (input.password.length < 8) {
-      throw new ApiError('invalid', 'Use at least 8 characters for your password.', { field: 'password' });
-    }
     const users = this.db.read('users');
     if (Object.values(users).some((u) => u.emailLower === emailLower)) {
       throw new ApiError('email_taken', 'An account with this email already exists. Sign in instead.', { field: 'email' });
@@ -123,8 +115,7 @@ export class LocalApi implements ElumApi {
 
   async updateProfile(input: { name: string }): Promise<User> {
     const me = this.requireUser();
-    const name = input.name.trim();
-    if (!name) throw new ApiError('invalid', 'Enter your name.', { field: 'name' });
+    const name = cleanName(input.name);
     const row = this.db.update('users', (rows) => {
       rows[me.id] = { ...rows[me.id], name };
       return rows[me.id];
@@ -539,18 +530,6 @@ function readBytes(blob: Blob): Promise<ArrayBuffer> {
     reader.onerror = () => reject(reader.error);
     reader.readAsArrayBuffer(blob);
   });
-}
-
-function cleanTitle(title: string | undefined): string {
-  const t = (title ?? '').replace(/\s+/g, ' ').trim().slice(0, MAX_TITLE);
-  return t || 'Untitled document';
-}
-
-function cleanComment(body: string): string {
-  const text = body.trim();
-  if (!text) throw new ApiError('invalid', 'Write something first.');
-  if (text.length > MAX_COMMENT) throw new ApiError('invalid', 'Comments can be up to 4,000 characters.');
-  return text;
 }
 
 /** Name and email prefix matches first. */

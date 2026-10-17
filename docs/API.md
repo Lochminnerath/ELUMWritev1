@@ -1,5 +1,9 @@
 # ELUM API contract for Write
 
+> Using Supabase? You do not need this document: the migration in
+> `supabase/migrations` implements all of it. See `supabase/README.md`.
+> This contract is for a custom ELUM API server.
+
 This is what ELUM Write expects from the ELUM API. The app already speaks it
 through `src/api/http/HttpApi.ts`. Until the API is live, `src/api/local/LocalApi.ts`
 implements the same rules inside the browser, and `src/api/local/LocalApi.test.ts`

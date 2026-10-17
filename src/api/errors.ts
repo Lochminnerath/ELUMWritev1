@@ -1,6 +1,7 @@
 export type ApiErrorCode =
   | 'unauthorized'
   | 'invalid_credentials'
+  | 'confirm_email'
   | 'email_taken'
   | 'invalid'
   | 'forbidden'
@@ -14,6 +15,7 @@ export type ApiErrorCode =
 const STATUS: Record<ApiErrorCode, number> = {
   unauthorized: 401,
   invalid_credentials: 401,
+  confirm_email: 202,
   email_taken: 409,
   invalid: 400,
   forbidden: 403,

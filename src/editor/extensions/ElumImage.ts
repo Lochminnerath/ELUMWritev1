@@ -1,6 +1,6 @@
 import { mergeAttributes, Node } from '@tiptap/core';
 import { ReactNodeViewRenderer } from '@tiptap/react';
-import { LOCAL_ASSET_PREFIX } from '../../api/content';
+import { isAssetRef } from '../../api/content';
 import { ImageView } from '../ImageView';
 
 /**
@@ -53,12 +53,12 @@ export const ElumImage = Node.create<ElumImageOptions>({
     return {
       src: {
         default: null,
-        // Images stored in this browser have no URL the page can fetch, so they render as
+        // Images in Write's storage have no URL the page can fetch directly, so they render as
         // data-elum-src. That avoids a failed request before the node view takes over, and
         // copy and paste inside Write still carries the image.
         parseHTML: (el) => el.getAttribute('data-elum-src') ?? el.getAttribute('src'),
         renderHTML: (attrs) =>
-          typeof attrs.src === 'string' && attrs.src.startsWith(LOCAL_ASSET_PREFIX) ? { 'data-elum-src': attrs.src } : { src: attrs.src },
+          isAssetRef(attrs.src) ? { 'data-elum-src': attrs.src } : { src: attrs.src },
       },
       alt: { default: null },
       width: {
@@ -86,7 +86,7 @@ export const ElumImage = Node.create<ElumImageOptions>({
     return [
       {
         tag: 'img[data-elum-src]',
-        getAttrs: (el) => ((el as HTMLElement).getAttribute('data-elum-src')?.startsWith(LOCAL_ASSET_PREFIX) ? null : false),
+        getAttrs: (el) => (isAssetRef((el as HTMLElement).getAttribute('data-elum-src')) ? null : false),
       },
       {
         tag: 'img[src]',

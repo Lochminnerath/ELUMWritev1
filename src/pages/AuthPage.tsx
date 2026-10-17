@@ -21,7 +21,7 @@ export function AuthPage({ mode }: { mode: Mode }) {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<{ message: string; field?: Field } | null>(null);
+  const [error, setError] = useState<{ message: string; field?: Field; notice?: boolean } | null>(null);
 
   const isSignUp = mode === 'signup';
   const switchHref = `${isSignUp ? '/signin' : '/signup'}${next !== '/' ? `?next=${encodeURIComponent(next)}` : ''}`;
@@ -36,7 +36,8 @@ export function AuthPage({ mode }: { mode: Mode }) {
       navigate(next, { replace: true });
     } catch (err) {
       const field = isApiError(err) ? (err.details?.field as Field | undefined) : undefined;
-      setError({ message: errorMessage(err), field });
+      // "Check your email" is the next step, not a mistake.
+      setError({ message: errorMessage(err), field, notice: isApiError(err, 'confirm_email') });
       setBusy(false);
     }
   };
@@ -136,7 +137,7 @@ export function AuthPage({ mode }: { mode: Mode }) {
           </div>
 
           {error && (
-            <p className="auth__error" role="alert">
+            <p className={error.notice ? 'auth__notice' : 'auth__error'} role={error.notice ? 'status' : 'alert'}>
               {error.message}
             </p>
           )}

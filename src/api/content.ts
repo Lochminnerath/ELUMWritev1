@@ -4,6 +4,13 @@ import type { DocMark, DocNode, PreviewBlock } from './types';
 export const COMMENT_MARK = 'comment';
 /** Images uploaded through the local API are stored as `elum-asset:<id>`. */
 export const LOCAL_ASSET_PREFIX = 'elum-asset:';
+/** Images in Supabase Storage are stored as `sb-asset:<path>` and turned into signed URLs to show. */
+export const SUPABASE_ASSET_PREFIX = 'sb-asset:';
+
+/** True for image sources that point at Write's own storage rather than a web address. */
+export function isAssetRef(src: unknown): src is string {
+  return typeof src === 'string' && (src.startsWith(LOCAL_ASSET_PREFIX) || src.startsWith(SUPABASE_ASSET_PREFIX));
+}
 
 export function emptyDocument(): DocNode {
   return { type: 'doc', content: [{ type: 'paragraph' }] };

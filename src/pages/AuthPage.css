@@ -160,6 +160,14 @@
   color: var(--danger);
   font-weight: 500;
 }
+.auth__notice {
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  background: var(--elum-mist);
+  color: var(--ink);
+  font-weight: 500;
+}
 .auth__submit {
   margin-top: var(--space-2);
   height: 46px;

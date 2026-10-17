@@ -1,7 +1,7 @@
 import type { Editor } from '@tiptap/core';
 import { DOMSerializer, Node as PMNode } from '@tiptap/pm/model';
 import type { DocNode, ElumApi } from '../api';
-import { COMMENT_MARK, LOCAL_ASSET_PREFIX, stripMarks } from '../api/content';
+import { COMMENT_MARK, isAssetRef, stripMarks } from '../api/content';
 import { findFont } from './fonts';
 
 function fileName(title: string, ext: string) {
@@ -29,10 +29,10 @@ function blobToDataUrl(blob: Blob): Promise<string> {
   });
 }
 
-/** Copies the document with images that only exist in this browser embedded as data URLs. */
+/** Copies the document with Write-stored images embedded as data URLs, so the file stands alone. */
 async function embedLocalImages(node: DocNode, api: ElumApi): Promise<DocNode> {
   const src = node.attrs?.src;
-  if (node.type === 'image' && typeof src === 'string' && src.startsWith(LOCAL_ASSET_PREFIX)) {
+  if (node.type === 'image' && isAssetRef(src)) {
     try {
       return { ...node, attrs: { ...node.attrs, src: await blobToDataUrl(await api.fetchAsset(src)) } };
     } catch {
