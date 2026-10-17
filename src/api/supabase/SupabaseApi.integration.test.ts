@@ -190,4 +190,20 @@ describe.skipIf(!URL || !SECRET)('SupabaseApi against Postgres and PostgREST', (
     expect((await owner.getPreferences()).spellLanguage).toBe('en-GB');
     expect((await viewer.getPreferences()).dictionary).toEqual([]);
   });
+
+  it('delivers notifications across the platform', async () => {
+    const owner = as('owner');
+    const stranger = as('stranger');
+    const doc = await owner.createDocument({ title: 'Platform notes', content: text('Hi') });
+    await owner.shareByEmail(doc.id, 'stan@example.org', 'viewer');
+    const [note] = await stranger.notifications.list({ unreadOnly: true });
+    expect(note).toMatchObject({ service: 'write', type: 'write.document.shared', title: 'Olu Owner shared “Platform notes” with you', link: `/d/${doc.id}` });
+    expect(note.actor?.name).toBe('Olu Owner');
+    await stranger.notifications.markRead([note.id]);
+    expect(await stranger.notifications.list({ unreadOnly: true })).not.toContainEqual(expect.objectContaining({ id: note.id }));
+    await stranger.notifications.markRead();
+    expect(await stranger.notifications.list({ unreadOnly: true })).toEqual([]);
+    expect(await owner.notifications.list()).not.toContainEqual(expect.objectContaining({ id: note.id }));
+    await owner.deleteDocument(doc.id);
+  });
 });

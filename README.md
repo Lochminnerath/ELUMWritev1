@@ -84,6 +84,20 @@ remove a shared document from your list. Start blank or from a template
 - Zoom from 50% to 200%. Page colour can follow light or dark mode, or always be white paper.
 - Download as PDF, a web page (images embedded) or plain text; print. Printing uses a clean copy of the document in a hidden frame, never the editor page itself.
 
+**Academic formats.** The Styles and citations panel sets a document to MLA (9th),
+APA (7th, student), Chicago (17th, author-date), Harvard or IEEE:
+
+- **The look:** Times New Roman, the style's spacing and first-line indents, and headings.
+- **The header:** your surname and page number (MLA), or page numbers, printed in the top right.
+- **The first page:** a heading block or title page from a short form.
+- **Sources:** add books, journal articles and web pages. Write formats each entry in the chosen style, cites it in the text ("(Kimmerer 42)", "(Lopez & Okafor, 2021, p. 45)", "[1]"), and builds the Works Cited or References list (sorted, with hanging indents) on a new page.
+- **Switching styles** reformats everything.
+
+There are also page breaks, and first-line and hanging indents for any paragraph.
+
+**Notifications.** On Supabase, a bell lists shares, comments and replies from every ELUM
+service, live.
+
 **Spelling.** Write checks spelling itself, so it is the same on every device and
 browser: Hunspell dictionaries for English (US) and English (UK) run in a background
 worker ([nspell](https://github.com/wooorm/nspell)). Misspelled words get a wavy line;
@@ -134,6 +148,7 @@ src/
                        Tab keys, comments, images, permissions
     toolbar/           The formatting dock: fonts, sizes, colours (own picker), links
     spelling/          Spell check: worker, word finder, suggestions, menu
+    academic/          MLA, APA, Chicago, Harvard, IEEE: styles, citations, sources
     SidePanels.tsx     The tool rail and its panels
     fonts.ts           The font catalogue
     DocWorkspace.tsx   Bar, rail, page, dock, comments, autosave
@@ -141,6 +156,7 @@ src/
 public/brand/          Logos, Write marks, document logo, loaders
 docs/API.md            The contract for the ELUM API
 docs/EMAIL.md          Email design, the list of emails, and how to install them
+docs/ELUM-PLATFORM.md  The shared platform for every ELUM service, and the ELUM Type handoff
 supabase/              Database migrations, tests, edge functions and email templates
 ```
 

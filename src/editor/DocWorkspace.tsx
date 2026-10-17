@@ -31,6 +31,7 @@ import { Dialog } from '../components/Dialog';
 import { Loader } from '../components/Loader';
 import { Menu, type MenuEntry } from '../components/Menu';
 import { useToast } from '../components/Toast';
+import { NotificationBell } from '../components/NotificationBell';
 import { UserMenu } from '../components/UserMenu';
 import { useMediaQuery, usePersistedState } from '../lib/hooks';
 import { ThemeToggle } from '../theme/ThemeToggle';
@@ -48,6 +49,9 @@ import type { PageMode } from './pageMode';
 import { ShareDialog } from './ShareDialog';
 import { InsertPanel, OutlinePanel, PagePanel, Rail, SpellingPanel, type PanelId } from './SidePanels';
 import { SpellMenu } from './spelling/SpellMenu';
+import { docSettings } from './academic/AcademicDocument';
+import { academicCss } from './academic/styles';
+import { StylesPanel } from './academic/StylesPanel';
 import { useSpellChecker, useSpelling } from './spelling/useSpelling';
 import { Toolbar } from './toolbar/Toolbar';
 import { useAutosave, type SaveStatus } from './useAutosave';
@@ -57,7 +61,10 @@ const MENU_ICON = { size: 16, strokeWidth: 1.75 };
 const isZoom = (v: unknown): v is number => typeof v === 'number' && ZOOMS.includes(v);
 const isBool = (v: unknown): v is boolean => typeof v === 'boolean';
 const isPageMode = (v: unknown): v is PageMode => v === 'theme' || v === 'paper';
-const isPanel = (v: unknown): v is PanelId | null => v === null || v === 'outline' || v === 'insert' || v === 'spelling' || v === 'page';
+const PANEL_IDS: PanelId[] = ['outline', 'insert', 'styles', 'spelling', 'page'];
+const isPanel = (v: unknown): v is PanelId | null => v === null || PANEL_IDS.includes(v as PanelId);
+// Each academic style's look, for the page on screen (the exported copy has its own scope).
+const PAGE_ACADEMIC_CSS = academicCss((id) => `.page[data-doc-style="${id}"] .doc-content`);
 
 function imageFiles(list: FileList | null | undefined): File[] {
   return Array.from(list ?? []).filter((f) => ACCEPTED_IMAGE_TYPES.includes(f.type));
@@ -407,6 +414,7 @@ export function DocWorkspace({ initialDoc, initialComments }: Props) {
     return () => window.removeEventListener('keydown', onKey);
   }, [editor, editable, autosave, startComment, toast, print]);
 
+  const settings = useEditorState({ editor, selector: ({ editor: e }) => (e ? docSettings(e.state.doc.attrs) : docSettings({})) });
   const words = useEditorState({ editor, selector: ({ editor: e }) => e?.storage.characterCount.words() ?? 0 });
 
   if (lostAccess) return <DocumentProblem kind="forbidden" message={lostAccess} />;
@@ -415,7 +423,7 @@ export function DocWorkspace({ initialDoc, initialComments }: Props) {
   const showComments = commentable && commentsOpen;
   const effectiveZoom = narrow ? 100 : zoom;
   const openPanel = (id: PanelId) => setPanel(id);
-  const toolPanel = panel && (editable || (panel !== 'insert' && panel !== 'spelling')) ? panel : null;
+  const toolPanel = panel && (editable || (panel !== 'insert' && panel !== 'spelling' && panel !== 'styles')) ? panel : null;
 
   const documentMenu = (): MenuEntry[] => [
     { label: 'New document', icon: <FilePlus2 {...MENU_ICON} />, onSelect: () => void newDocument() },
@@ -438,7 +446,13 @@ export function DocWorkspace({ initialDoc, initialComments }: Props) {
       ? ([
           'separator',
           { label: 'Outline', onSelect: () => openPanel('outline') },
-          ...(editable ? [{ label: 'Spelling', onSelect: () => openPanel('spelling') }, { label: 'Insert', onSelect: () => openPanel('insert') }] : []),
+          ...(editable
+            ? [
+                { label: 'Insert', onSelect: () => openPanel('insert') },
+                { label: 'Styles and citations', onSelect: () => openPanel('styles') },
+                { label: 'Spelling', onSelect: () => openPanel('spelling') },
+              ]
+            : []),
           { label: 'Page and view', onSelect: () => openPanel('page') },
         ] as MenuEntry[])
       : []),
@@ -513,6 +527,7 @@ export function DocWorkspace({ initialDoc, initialComments }: Props) {
               {openIds.length > 0 && <span className="comments-toggle__count">{openIds.length}</span>}
             </button>
           )}
+          <NotificationBell />
           <button type="button" className="share-btn" onClick={() => setShareOpen(true)}>
             <UserPlus size={17} strokeWidth={2} />
             <span>Share</span>
@@ -539,6 +554,7 @@ export function DocWorkspace({ initialDoc, initialComments }: Props) {
                 onComment={startComment}
               />
             )}
+            {toolPanel === 'styles' && <StylesPanel editor={editor} onClose={() => setPanel(null)} />}
             {toolPanel === 'spelling' && <SpellingPanel editor={editor} spelling={spelling} onClose={() => setPanel(null)} />}
             {toolPanel === 'page' && (
               <PagePanel
@@ -563,8 +579,14 @@ export function DocWorkspace({ initialDoc, initialComments }: Props) {
                 className="page"
                 data-theme={pageMode === 'paper' ? 'light' : undefined}
                 data-hide-comments={!commentable || undefined}
+                data-doc-style={settings.docStyle ?? undefined}
                 style={{ zoom: effectiveZoom / 100 }}
               >
+                {(settings.pageNumbers || settings.header) && (
+                  <div className="page-header" aria-label="Page header">
+                    {[settings.header, settings.pageNumbers ? '1' : null].filter(Boolean).join(' ')}
+                  </div>
+                )}
                 <EditorContent editor={editor} />
               </div>
               {showComments && !wide && <div className="comments-scrim" onClick={() => setCommentsOpen(false)} aria-hidden="true" />}
@@ -614,7 +636,7 @@ export function DocWorkspace({ initialDoc, initialComments }: Props) {
 
           {editable && (
             <div className="dock">
-              <Toolbar editor={editor} onInsertImage={() => fileInput.current?.click()} onComment={startComment} linkOpen={linkOpen} onLinkOpenChange={setLinkOpen} />
+              <Toolbar editor={editor} academic={settings.docStyle} onInsertImage={() => fileInput.current?.click()} onComment={startComment} linkOpen={linkOpen} onLinkOpenChange={setLinkOpen} />
             </div>
           )}
 
@@ -653,6 +675,7 @@ export function DocWorkspace({ initialDoc, initialComments }: Props) {
 
       {editable && <SpellMenu editor={editor} spelling={spelling} />}
       <style>{commentRules}</style>
+      <style>{PAGE_ACADEMIC_CSS}</style>
 
       <input
         ref={fileInput}

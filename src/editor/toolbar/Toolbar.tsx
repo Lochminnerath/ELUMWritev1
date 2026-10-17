@@ -47,6 +47,7 @@ import { ColorPicker } from './ColorPicker';
 import { FontPicker } from './FontPicker';
 import { FontSizeControl } from './FontSizeControl';
 import { LinkPopover } from './LinkPopover';
+import type { CitationStyle } from '../academic/citations';
 import './toolbar.css';
 
 const ICON = { size: 18, strokeWidth: 1.75 };
@@ -96,13 +97,15 @@ const ALIGNS = [
 
 interface ToolbarProps {
   editor: Editor;
+  /** The document's academic style, which sets its own default font and size. */
+  academic?: CitationStyle | null;
   onInsertImage: () => void;
   onComment: () => void;
   linkOpen: boolean;
   onLinkOpenChange: (open: boolean) => void;
 }
 
-export function Toolbar({ editor, onInsertImage, onComment, linkOpen, onLinkOpenChange }: ToolbarProps) {
+export function Toolbar({ editor, academic = null, onInsertImage, onComment, linkOpen, onLinkOpenChange }: ToolbarProps) {
   const s = useFormatState(editor);
   const run = () => editor.chain().focus();
   const align = ALIGNS.find((a) => a.value === s.align) ?? ALIGNS[0];
@@ -136,6 +139,16 @@ export function Toolbar({ editor, onInsertImage, onComment, linkOpen, onLinkOpen
           checked: s.spaceAfter === pt,
           onSelect: () => run().setSpaceAfter(pt).run(),
         })),
+      ],
+    },
+    {
+      label: 'First line',
+      hint: s.textIndent === 'first' ? 'Indented' : s.textIndent === 'hanging' ? 'Hanging' : s.textIndent === 'none' ? 'Flush' : 'Default',
+      items: [
+        { label: 'Default for this document', checked: s.textIndent === null, onSelect: () => run().setTextIndent(null).run() },
+        { label: 'Indent first line', checked: s.textIndent === 'first', onSelect: () => run().setTextIndent('first').run() },
+        { label: 'Hanging indent', checked: s.textIndent === 'hanging', onSelect: () => run().setTextIndent('hanging').run() },
+        { label: 'No indent', checked: s.textIndent === 'none', onSelect: () => run().setTextIndent('none').run() },
       ],
     },
     {
@@ -174,9 +187,9 @@ export function Toolbar({ editor, onInsertImage, onComment, linkOpen, onLinkOpen
         )}
       />
       <span className="divider" />
-      <FontPicker editor={editor} value={s.fontFamily} />
+      <FontPicker editor={editor} value={s.fontFamily} fallback={academic ? '"Times New Roman", Times, serif' : undefined} />
       <span className="divider" />
-      <FontSizeControl editor={editor} size={currentFontSize(s)} />
+      <FontSizeControl editor={editor} size={academic && !s.fontSize ? (academic === 'ieee' ? (s.blockStyle === 'h1' ? 24 : 10) : 12) : currentFontSize(s)} />
       <span className="divider" />
       <div className="toolbar__group">
         <ToolButton label="Bold" keys="Mod+B" icon={Bold} active={s.bold} onClick={() => run().toggleBold().run()} />

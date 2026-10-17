@@ -27,8 +27,9 @@ function groupFonts(fonts: FontDef[]): Group[] {
 
 const keep = (e: { preventDefault: () => void }) => e.preventDefault();
 
-export function FontPicker({ editor, value }: { editor: Editor; value: string | null }) {
-  const current = value ?? DEFAULT_FONT.stack;
+/** `fallback` is the font text has when none is chosen (an academic style's Times New Roman). */
+export function FontPicker({ editor, value, fallback }: { editor: Editor; value: string | null; fallback?: string }) {
+  const current = value ?? fallback ?? DEFAULT_FONT.stack;
   return (
     <Popover
       label="Font"
@@ -38,7 +39,7 @@ export function FontPicker({ editor, value }: { editor: Editor; value: string | 
       trigger={(props) => (
         <button type="button" className="tb-select tb-select--font" data-tip="Font" onMouseDown={keep} {...props}>
           <span className="tb-select__value" style={{ fontFamily: current }}>
-            {fontLabel(value)}
+            {fontLabel(value ?? fallback ?? null)}
           </span>
           <ChevronDown size={14} strokeWidth={1.75} />
         </button>

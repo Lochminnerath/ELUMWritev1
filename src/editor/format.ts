@@ -146,6 +146,7 @@ export function useFormatState(editor: Editor) {
         lineHeight: (block.attrs.lineHeight as string | null) ?? null,
         spaceBefore: (block.attrs.spaceBefore as number | null) ?? null,
         spaceAfter: (block.attrs.spaceAfter as number | null) ?? null,
+        textIndent: (block.attrs.textIndent as string | null) ?? null,
         bulletList: e.isActive('bulletList'),
         orderedList: e.isActive('orderedList'),
         taskList: e.isActive('taskList'),

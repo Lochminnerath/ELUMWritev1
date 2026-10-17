@@ -95,6 +95,12 @@ interface Asset { id: string; url: string; mimeType: string; size: number }
   up to 14 custom colours (`#rrggbb`), up to 5,000 dictionary words, `spellLanguage` is
   `en-US` or `en-GB`.
 
+## Notifications
+
+On Supabase, notifications come from the shared ELUM platform (`public.elum_notifications`,
+`public.elum_mark_notifications_read` and Realtime). See docs/ELUM-PLATFORM.md. A custom ELUM API
+may leave `notifications` out, and the bell then stays hidden.
+
 ## People
 
 | Method | Path | Returns |

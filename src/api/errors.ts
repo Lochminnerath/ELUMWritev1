@@ -9,6 +9,7 @@ export type ApiErrorCode =
   | 'conflict'
   | 'too_large'
   | 'storage_full'
+  | 'rate_limited'
   | 'network'
   | 'server';
 
@@ -23,6 +24,7 @@ const STATUS: Record<ApiErrorCode, number> = {
   conflict: 409,
   too_large: 413,
   storage_full: 507,
+  rate_limited: 429,
   network: 0,
   server: 500,
 };

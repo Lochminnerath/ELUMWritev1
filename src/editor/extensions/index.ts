@@ -9,6 +9,7 @@ import { CharacterCount, Placeholder } from '@tiptap/extensions';
 import StarterKit from '@tiptap/starter-kit';
 import type { SpellChecker } from '../spelling/checker';
 import { Spellcheck } from '../spelling/Spellcheck';
+import { ElumDocument, PageBreak } from '../academic/AcademicDocument';
 import { CommentMark } from './Comment';
 import { ElumImage } from './ElumImage';
 import { LetterSpacing } from './LetterSpacing';
@@ -28,6 +29,7 @@ export interface ExtensionOptions {
 export function buildExtensions({ resolveImageSrc, placeholder = 'Start writing', spellChecker = null }: ExtensionOptions = {}): Extensions {
   return [
     StarterKit.configure({
+      document: false,
       heading: { levels: [1, 2, 3, 4] },
       link: {
         openOnClick: false,
@@ -37,6 +39,8 @@ export function buildExtensions({ resolveImageSrc, placeholder = 'Start writing'
         HTMLAttributes: { rel: 'noopener noreferrer nofollow', target: '_blank' },
       },
     }),
+    ElumDocument,
+    PageBreak,
     TextStyle,
     Color,
     FontFamily,

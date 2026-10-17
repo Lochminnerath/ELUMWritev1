@@ -21,6 +21,8 @@ export function findWords(doc: PMNode): SpellWord[] {
   doc.descendants((node, pos) => {
     if (node.type.spec.code) return false;
     if (!node.isTextblock) return true;
+    // Generated works cited and reference lists are names and titles, not prose.
+    if (node.attrs.citation) return false;
     let text = '';
     const skip: [number, number][] = [];
     node.forEach((child) => {

@@ -3,6 +3,8 @@ import { useEditorState } from '@tiptap/react';
 import {
   BookOpenCheck,
   CalendarDays,
+  FileStack,
+  GraduationCap,
   Check,
   ImagePlus,
   Keyboard,
@@ -24,11 +26,12 @@ import { ZOOMS } from './format';
 import type { PageMode } from './pageMode';
 import { replaceWord, type Spelling } from './spelling/useSpelling';
 
-export type PanelId = 'outline' | 'insert' | 'spelling' | 'page';
+export type PanelId = 'outline' | 'insert' | 'styles' | 'spelling' | 'page';
 
 export const PANELS: { id: PanelId; label: string; icon: LucideIcon; editOnly?: boolean }[] = [
   { id: 'outline', label: 'Outline', icon: PanelLeft },
   { id: 'insert', label: 'Insert', icon: ImagePlus, editOnly: true },
+  { id: 'styles', label: 'Styles and citations', icon: GraduationCap, editOnly: true },
   { id: 'spelling', label: 'Spelling', icon: SpellCheck2, editOnly: true },
   { id: 'page', label: 'Page and view', icon: SlidersHorizontal },
 ];
@@ -74,7 +77,7 @@ export function Rail({
   );
 }
 
-function PanelShell({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
+export function PanelShell({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
   return (
     <aside className="side-panel" aria-label={title}>
       <header className="side-panel__head">
@@ -162,6 +165,7 @@ export function InsertPanel({
     { label: 'Checklist', hint: 'Tick things off', icon: ListTodo, onClick: () => run().toggleTaskList().run() },
     { label: 'Quote', hint: 'Set text apart', icon: TextQuote, onClick: () => run().toggleBlockquote().run() },
     { label: 'Line', hint: 'Divide sections', icon: Minus, onClick: () => run().setHorizontalRule().run() },
+    { label: 'Page break', hint: 'Start a new page', icon: FileStack, onClick: () => run().setPageBreak().run() },
     {
       label: "Today's date",
       hint: new Date().toLocaleDateString(undefined, { dateStyle: 'medium' }),

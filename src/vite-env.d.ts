@@ -7,6 +7,8 @@ interface ImportMetaEnv {
   readonly VITE_SUPABASE_URL?: string;
   /** Supabase anon (publishable) key. Safe in the browser; row level security protects the data. */
   readonly VITE_SUPABASE_ANON_KEY?: string;
+  /** Parent domain shared by every ELUM service, such as .elum.example. Shares one sign-in across them. */
+  readonly VITE_ELUM_COOKIE_DOMAIN?: string;
 }
 
 interface ImportMeta {

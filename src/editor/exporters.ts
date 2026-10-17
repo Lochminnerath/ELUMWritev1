@@ -2,6 +2,8 @@ import type { Editor } from '@tiptap/core';
 import { DOMSerializer, Node as PMNode } from '@tiptap/pm/model';
 import type { DocNode, ElumApi } from '../api';
 import { COMMENT_MARK, isAssetRef, stripMarks } from '../api/content';
+import { docSettings } from './academic/AcademicDocument';
+import { academicCss, findStyle } from './academic/styles';
 import { findFont } from './fonts';
 
 function fileName(title: string, ext: string) {
@@ -73,6 +75,9 @@ img[data-wrap="break"] { display: block; margin: 8px 0; }
 img[data-wrap="break"][data-align="center"] { margin-left: auto; margin-right: auto; }
 img[data-wrap="break"][data-align="right"] { margin-left: auto; }
 a { color: #3b5bd6; }
+.page-break { break-after: page; height: 0; }
+p[data-text-indent="first"] { text-indent: 0.5in; }
+p[data-text-indent="hanging"] { padding-left: 0.5in; text-indent: -0.5in; }
 @page { margin: 0.75in; }
 @media print { body { background: #fff; } article { margin: 0; padding: 0; max-width: none; } }
 `;
@@ -95,6 +100,27 @@ async function standaloneHtml(editor: Editor, title: string, api: ElumApi): Prom
   });
   const fontLink = `https://fonts.googleapis.com/css2?${[...new Set(families)].map((f) => `family=${f.replace(/ /g, '+')}`).join('&')}&display=swap`;
 
+  // Academic styles: their look, and a running header with page numbers when printed.
+  const settings = docSettings(editor.state.doc.attrs);
+  const style = findStyle(settings.docStyle);
+  // Quoted for CSS; `<` is escaped too, so header text can never close the <style> element.
+  const cssString = (s: string) => `"${s.replace(/["\\]/g, '\\$&').replace(/</g, '\\3C ').replace(/[\r\n]+/g, ' ')}"`;
+  const header = settings.header?.trim() ?? '';
+  const headerContent = settings.pageNumbers
+    ? header
+      ? `${cssString(`${header} `)} counter(page)`
+      : 'counter(page)'
+    : header
+      ? cssString(header)
+      : '';
+  const academic = style
+    ? `${academicCss((id) => `article[data-doc-style="${id}"]`)}
+@page { margin: ${style.id === 'ieee' ? '0.75in' : '1in'}; }`
+    : '';
+  const pageHeader = headerContent
+    ? `@page { @top-right { content: ${headerContent}; font: 12pt "Times New Roman", Times, serif; vertical-align: bottom; padding-bottom: 0.25in; } }`
+    : '';
+
   const html = `<!doctype html>
 <html lang="en">
 <head>
@@ -102,10 +128,11 @@ async function standaloneHtml(editor: Editor, title: string, api: ElumApi): Prom
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${escapeHtml(title)}</title>
 <link rel="stylesheet" href="${fontLink}">
-<style>${EXPORT_CSS}</style>
+<style>${EXPORT_CSS}${academic}
+${pageHeader}</style>
 </head>
 <body>
-<article>${container.innerHTML}</article>
+<article${style ? ` data-doc-style="${style.id}"` : ''}>${container.innerHTML}</article>
 </body>
 </html>
 `;

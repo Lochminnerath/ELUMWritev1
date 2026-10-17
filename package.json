@@ -17,6 +17,7 @@
   "dependencies": {
     "@supabase/supabase-js": "^2.118.0",
     "@tiptap/core": "^3.32.0",
+    "@tiptap/extension-document": "^3.32.0",
     "@tiptap/extension-highlight": "^3.32.0",
     "@tiptap/extension-list": "^3.32.0",
     "@tiptap/extension-subscript": "^3.32.0",

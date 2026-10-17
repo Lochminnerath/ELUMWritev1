@@ -45,6 +45,12 @@ export function welcomeDocument(name: string): DocNode {
         t('Spelling', bold),
         t(' on the left. Words you add to your dictionary are saved to your account.'),
       ),
+      h(2, 'Papers and citations'),
+      p(
+        t('Writing for a class? Open '),
+        t('Styles and citations', bold),
+        t(' on the left to format the whole document in MLA, APA, Chicago, Harvard or IEEE, set up the first page, add your sources, cite them in the text and build the Works Cited list.'),
+      ),
       h(2, 'Work together'),
       p(
         t('Use '),

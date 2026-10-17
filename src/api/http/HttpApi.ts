@@ -33,6 +33,7 @@ const KNOWN_CODES = new Set<ApiErrorCode>([
   'conflict',
   'too_large',
   'storage_full',
+  'rate_limited',
   'server',
 ]);
 

@@ -150,3 +150,20 @@ export interface Asset {
   mimeType: string;
   size: number;
 }
+
+/** One of the ELUM products, as the platform lists them. */
+export type ServiceId = 'write' | 'type' | 'browse' | 'make' | 'store';
+
+/** Something that happened in any ELUM service, for the person's bell. */
+export interface AppNotification {
+  id: string;
+  service: ServiceId | 'elum';
+  type: string;
+  title: string;
+  body: string | null;
+  /** A path inside the service, or a full URL. */
+  link: string | null;
+  createdAt: string;
+  readAt: string | null;
+  actor: Pick<PublicUser, 'id' | 'name' | 'color'> | null;
+}

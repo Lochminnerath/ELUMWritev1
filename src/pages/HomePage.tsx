@@ -11,6 +11,7 @@ import { Dialog } from '../components/Dialog';
 import { Loader } from '../components/Loader';
 import { Menu } from '../components/Menu';
 import { useToast } from '../components/Toast';
+import { NotificationBell } from '../components/NotificationBell';
 import { UserMenu } from '../components/UserMenu';
 import { TEMPLATES, type Template } from '../lib/templates';
 import { formatFull, formatWhen, formatWhenInline } from '../lib/time';
@@ -173,6 +174,7 @@ export function HomePage() {
           )}
         </label>
         <div className="app-header__end">
+          <NotificationBell />
           <ThemeToggle />
           <UserMenu />
         </div>

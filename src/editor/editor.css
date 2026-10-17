@@ -632,6 +632,155 @@
   color: var(--write-deep);
   font-weight: 600;
 }
+.styles-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.style-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.style-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px;
+  border: 1px solid var(--hairline);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--ink);
+  text-align: left;
+}
+.style-card:hover {
+  border-color: var(--write-line);
+}
+.style-card[aria-checked='true'] {
+  border-color: var(--write);
+  background: var(--write-mist);
+}
+.style-card__name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  font-size: 14px;
+}
+.style-card__name svg {
+  margin-left: auto;
+  color: var(--write-deep);
+}
+.style-card__edition {
+  font-weight: 400;
+  font-size: 12px;
+  color: var(--ink-muted);
+}
+.style-card__summary {
+  font-size: 12px;
+  line-height: 17px;
+  color: var(--ink-muted);
+}
+.styles-panel__toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 8px 10px;
+  border: 1px dashed var(--write-line);
+  border-radius: 12px;
+  background: transparent;
+  color: var(--write-deep);
+  font-weight: 600;
+  font-size: 13px;
+}
+.styles-panel__form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  border-radius: 12px;
+  background: var(--surface-glass);
+}
+.styles-panel__form .elum-btn,
+.styles-panel__add {
+  align-self: flex-start;
+}
+.source-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.source-item {
+  padding: 10px 12px;
+  border: 1px solid var(--hairline);
+  border-radius: 12px;
+}
+.source-item__entry {
+  margin: 0 0 8px;
+  padding-left: 14px;
+  text-indent: -14px;
+  font: 13px/19px 'Times New Roman', Times, serif;
+}
+.source-item__actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.source-item__page {
+  width: 64px;
+  height: 30px;
+}
+.source-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.source-form__authors {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-start;
+}
+.source-form__author {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 6px;
+  width: 100%;
+}
+.source-form__grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+.source-form__grid .field[data-wide] {
+  grid-column: span 3;
+}
+.source-form__preview {
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--surface-glass);
+}
+.source-form__preview p {
+  margin: 4px 0 0;
+  padding-left: 0.5in;
+  text-indent: -0.5in;
+  font: 15px/1.6 'Times New Roman', Times, serif;
+}
+@media (max-width: 560px) {
+  .source-form__grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .source-form__grid .field[data-wide] {
+    grid-column: auto;
+  }
+}
 .counts--compact div {
   padding: 6px 0;
   font-size: 13px;
@@ -904,6 +1053,51 @@
   height: 0;
   color: var(--ink-muted);
   pointer-events: none;
+}
+
+/* Page breaks: a labelled line on screen, a new page in print. */
+.doc-content .page-break {
+  position: relative;
+  height: 28px;
+  margin: 12pt -1in;
+  background:
+    linear-gradient(var(--canvas), var(--canvas)) center / 100% 10px no-repeat;
+  box-shadow: inset 0 1px 0 var(--page-edge), inset 0 -1px 0 var(--page-edge);
+  cursor: default;
+}
+.doc-content .page-break::after {
+  content: 'Page break';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  translate: -50% -50%;
+  padding: 0 10px;
+  border-radius: var(--radius-pill);
+  background: var(--page);
+  color: var(--ink-muted);
+  font: 600 10px/18px var(--font-sans);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  box-shadow: 0 0 0 1px var(--hairline);
+}
+.doc-content .page-break.ProseMirror-selectednode::after {
+  color: var(--write-deep);
+  box-shadow: 0 0 0 1.5px var(--write);
+}
+/* Generated works cited and reference lists. */
+.doc-content p[data-citation] {
+  border-radius: 2px;
+}
+.page {
+  position: relative;
+}
+.page-header {
+  position: absolute;
+  top: 0.5in;
+  right: 1in;
+  font: 12pt/1 'Times New Roman', Times, serif;
+  color: var(--ink);
+  white-space: pre;
 }
 
 /* Misspelled words: a wavy line in the danger colour, drawn by Write's own spell check. */
@@ -1643,6 +1837,17 @@
   }
   .doc-content .spell-error {
     text-decoration: none;
+  }
+  .doc-content .page-break {
+    height: 0;
+    margin: 0;
+    box-shadow: none;
+    background: none;
+    break-after: page;
+  }
+  .doc-content .page-break::after,
+  .page-header {
+    display: none;
   }
   .ws-body {
     display: block;
