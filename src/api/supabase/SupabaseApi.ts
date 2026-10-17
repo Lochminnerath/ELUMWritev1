@@ -9,6 +9,7 @@ import type {
   DocumentFilter,
   DocumentRecord,
   DocumentSummary,
+  Invite,
   NewComment,
   PreviewBlock,
   PublicUser,
@@ -17,6 +18,7 @@ import type {
   SaveResult,
   Session,
   Share,
+  ShareByEmailResult,
   ShareRole,
   SignInInput,
   SignUpInput,
@@ -45,12 +47,15 @@ const RECORD = `${SUMMARY}, content, version`;
 const SHARE = `user_id, role, added_at,
   user:profiles!document_shares_user_id_fkey(${PERSON}),
   adder:profiles!document_shares_added_by_fkey(${PERSON})`;
+const INVITE = `email, role, invited_at, inviter:profiles!document_invites_invited_by_fkey(${PERSON})`;
+const PROFILE = `${PERSON}, account_type, welcomed, created_at`;
 const THREAD = `id, doc_id, body, quote, created_at, resolved, resolved_at,
   author:profiles!comments_author_id_fkey(${PERSON}),
   resolver:profiles!comments_resolved_by_fkey(${PERSON}),
   comment_replies(id, body, created_at, author:profiles!comment_replies_author_id_fkey(${PERSON}))`;
 
 interface ProfileRow extends PublicUser {
+  account_type: 'type' | 'external';
   welcomed: boolean;
   created_at: string;
 }
@@ -76,6 +81,13 @@ interface ShareRow {
   added_at: string;
   user: PublicUser | null;
   adder: PublicUser | null;
+}
+
+interface InviteRow {
+  email: string;
+  role: ShareRole;
+  invited_at: string;
+  inviter: PublicUser | null;
 }
 
 interface ThreadRow {
@@ -169,7 +181,8 @@ export class SupabaseApi implements ElumApi {
     const { data, error } = await this.sb.auth.signUp({
       email,
       password,
-      options: { data: { name }, emailRedirectTo: `${window.location.origin}/` },
+      // Type accounts come with ELUM's own inbox, which is not built yet; everyone signs up with their own email.
+      options: { data: { name, account_type: 'external' }, emailRedirectTo: `${window.location.origin}/` },
     });
     if (error) {
       if (error.code === 'user_already_exists' || error.code === 'email_exists') {
@@ -211,7 +224,7 @@ export class SupabaseApi implements ElumApi {
   async updateProfile(input: { name: string }): Promise<User> {
     const me = await this.me();
     const row = must(
-      await this.sb.from('profiles').update({ name: cleanName(input.name) }).eq('id', me).select(`${PERSON}, welcomed, created_at`).single<ProfileRow>(),
+      await this.sb.from('profiles').update({ name: cleanName(input.name) }).eq('id', me).select(PROFILE).single<ProfileRow>(),
     );
     return toUser(row);
   }
@@ -355,6 +368,39 @@ export class SupabaseApi implements ElumApi {
     if (!data?.length) throw new ApiError('forbidden', 'Only the owner and editors can remove people.');
   }
 
+  async shareByEmail(docId: string, email: string, role: ShareRole): Promise<ShareByEmailResult> {
+    await this.me();
+    const { data, error } = await this.sb.rpc('share_by_email', { p_doc: docId, p_email: email, p_role: role });
+    if (error) throw toApiError(error);
+    const result = data as { kind: 'share'; userId: string } | { kind: 'invite'; email: string };
+    if (result.kind === 'share') {
+      const row = must(
+        await this.sb.from('document_shares').select(SHARE).eq('doc_id', docId).eq('user_id', result.userId).single<ShareRow>(),
+      );
+      return { kind: 'share', share: toShare(row) };
+    }
+    const row = must(await this.sb.from('document_invites').select(INVITE).eq('doc_id', docId).eq('email', result.email).single<InviteRow>());
+    return { kind: 'invite', invite: toInvite(row) };
+  }
+
+  async listInvites(docId: string): Promise<Invite[]> {
+    await this.me();
+    const rows = must(await this.sb.from('document_invites').select(INVITE).eq('doc_id', docId).order('invited_at').returns<InviteRow[]>());
+    return rows.map(toInvite);
+  }
+
+  async removeInvite(docId: string, email: string): Promise<void> {
+    await this.me();
+    const { data, error } = await this.sb
+      .from('document_invites')
+      .delete()
+      .eq('doc_id', docId)
+      .eq('email', email.trim().toLowerCase())
+      .select('email');
+    if (error) throw toApiError(error);
+    if (!data?.length) throw new ApiError('forbidden', 'Only the owner and editors can cancel invites.');
+  }
+
   // ---------------------------------------------------------------- comments
 
   async listComments(docId: string): Promise<CommentThread[]> {
@@ -470,7 +516,7 @@ export class SupabaseApi implements ElumApi {
 
   private async sessionFor(session: AuthSession): Promise<Session> {
     const profile = must(
-      await this.sb.from('profiles').select(`${PERSON}, welcomed, created_at`).eq('id', session.user.id).single<ProfileRow>(),
+      await this.sb.from('profiles').select(PROFILE).eq('id', session.user.id).single<ProfileRow>(),
     );
     if (!profile.welcomed) await this.welcome(profile);
     return {
@@ -543,7 +589,11 @@ export class SupabaseApi implements ElumApi {
 }
 
 function toUser(p: ProfileRow): User {
-  return { id: p.id, name: p.name, email: p.email, color: p.color, createdAt: p.created_at };
+  return { id: p.id, name: p.name, email: p.email, color: p.color, accountType: p.account_type ?? 'external', createdAt: p.created_at };
+}
+
+function toInvite(row: InviteRow): Invite {
+  return { email: row.email, role: row.role, invitedAt: row.invited_at, invitedBy: row.inviter };
 }
 
 function roleFor(row: DocRow, me: string): Role {

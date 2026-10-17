@@ -5,12 +5,14 @@
 do $$ begin
   if not exists (select 1 from pg_roles where rolname = 'anon') then create role anon nologin; end if;
   if not exists (select 1 from pg_roles where rolname = 'authenticated') then create role authenticated nologin; end if;
+  if not exists (select 1 from pg_roles where rolname = 'service_role') then create role service_role nologin bypassrls; end if;
 end $$;
 
 create schema auth;
 create table auth.users (
   id uuid primary key default gen_random_uuid(),
   email text,
+  email_confirmed_at timestamptz,
   raw_user_meta_data jsonb not null default '{}'
 );
 -- Same definition as Supabase: the user id from the request's JWT (PostgREST sets the claims).
@@ -47,8 +49,9 @@ grant execute on function storage.foldername(text) to authenticated;
 
 -- Supabase grants these by default; the migration narrows them.
 grant usage on schema public to anon, authenticated;
-alter default privileges in schema public grant all on tables to anon, authenticated;
-alter default privileges in schema public grant all on functions to anon, authenticated;
+grant usage on schema public to service_role;
+alter default privileges in schema public grant all on tables to anon, authenticated, service_role;
+alter default privileges in schema public grant all on functions to anon, authenticated, service_role;
 
 -- PostgREST connects as `authenticator` and switches to anon or authenticated per request.
 do $$ begin
@@ -56,4 +59,4 @@ do $$ begin
     create role authenticator login noinherit password 'authenticator';
   end if;
 end $$;
-grant anon, authenticated to authenticator;
+grant anon, authenticated, service_role to authenticator;

@@ -98,6 +98,20 @@ describe.skipIf(!URL || !SECRET)('SupabaseApi against Postgres and PostgREST', (
     expect(shares[0].addedBy?.name).toBe('Olu Owner');
     expect(await code(owner.setShare(doc.id, PEOPLE.owner, 'editor'))).toBe('forbidden');
 
+    // Sharing by email: accounts directly, everyone else by invite
+    const byEmail = await owner.shareByEmail(doc.id, ' STAN@example.org ', 'viewer');
+    expect(byEmail.kind === 'share' && byEmail.share.user.name).toBe('Stan Stranger');
+    await owner.removeShare(doc.id, PEOPLE.stranger);
+    const invite = await owner.shareByEmail(doc.id, 'New.Person@Example.org', 'commenter');
+    expect(invite).toMatchObject({ kind: 'invite', invite: { email: 'new.person@example.org', role: 'commenter' } });
+    expect(invite.kind === 'invite' && invite.invite.invitedBy?.name).toBe('Olu Owner');
+    expect((await viewer.listInvites(doc.id)).map((i) => i.email)).toEqual(['new.person@example.org']);
+    expect(await code(viewer.shareByEmail(doc.id, 'x@example.org', 'viewer'))).toBe('forbidden');
+    expect(await code(viewer.removeInvite(doc.id, 'new.person@example.org'))).toBe('forbidden');
+    expect(await code(owner.shareByEmail(doc.id, 'nope', 'viewer'))).toBe('invalid');
+    await owner.removeInvite(doc.id, 'NEW.person@example.org');
+    expect(await owner.listInvites(doc.id)).toEqual([]);
+
     // Stranger
     expect(await code(stranger.getDocument(doc.id))).toBe('forbidden');
     expect(await code(stranger.getDocument('10000000-0000-0000-0000-0000000000ff'))).toBe('not_found');

@@ -7,12 +7,19 @@
 export type Role = 'owner' | 'editor' | 'commenter' | 'viewer';
 export type ShareRole = Exclude<Role, 'owner'>;
 
+/**
+ * `type`: an ELUM Type inbox (coming later; those accounts sign in through the inbox).
+ * `external`: the person's own email provider. Share emails go to that address.
+ */
+export type AccountType = 'type' | 'external';
+
 export interface User {
   id: string;
   name: string;
   email: string;
   /** Avatar colour, one of the product colours. */
   color: string;
+  accountType: AccountType;
   createdAt: string;
 }
 
@@ -28,6 +35,8 @@ export interface SignUpInput {
   name: string;
   email: string;
   password: string;
+  /** Defaults to `external`. Type accounts are not available yet. */
+  accountType?: AccountType;
 }
 
 export interface SignInInput {
@@ -95,6 +104,16 @@ export interface Share {
   addedAt: string;
   addedBy: PublicUser | null;
 }
+
+/** Access waiting for someone who has no account yet. It applies once they verify this address. */
+export interface Invite {
+  email: string;
+  role: ShareRole;
+  invitedAt: string;
+  invitedBy: PublicUser | null;
+}
+
+export type ShareByEmailResult = { kind: 'share'; share: Share } | { kind: 'invite'; invite: Invite };
 
 export interface CommentReply {
   id: string;

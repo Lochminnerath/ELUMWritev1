@@ -9,14 +9,17 @@ SECRET="integration-test-secret-integration-test-secret"
 createdb "$DB"
 cleanup() { [ -n "${PGRST_PID:-}" ] && kill "$PGRST_PID" 2>/dev/null; dropdb --if-exists "$DB"; }
 trap cleanup EXIT
-psql -q -v ON_ERROR_STOP=1 -d "$DB" -f "$ROOT/supabase/tests/supabase-stub.sql" -f "$ROOT/supabase/migrations/20261017000000_elum_write.sql" >/dev/null
+psql -q -v ON_ERROR_STOP=1 -d "$DB" -f "$ROOT/supabase/tests/supabase-stub.sql" >/dev/null
+for migration in "$ROOT"/supabase/migrations/*.sql; do
+  psql -q -v ON_ERROR_STOP=1 -d "$DB" -f "$migration" >/dev/null
+done
 psql -q -v ON_ERROR_STOP=1 -d "$DB" <<'SQL'
-insert into auth.users (id, email, raw_user_meta_data) values
-  ('00000000-0000-0000-0000-0000000000a1', 'olu@example.org', '{"name": "Olu Owner"}'),
-  ('00000000-0000-0000-0000-0000000000a2', 'vee@example.org', '{"name": "Vee Viewer"}'),
-  ('00000000-0000-0000-0000-0000000000a3', 'cam@example.org', '{"name": "Cam Commenter"}'),
-  ('00000000-0000-0000-0000-0000000000a4', 'eda@example.org', '{"name": "Eda Editor"}'),
-  ('00000000-0000-0000-0000-0000000000a5', 'stan@example.org', '{"name": "Stan Stranger"}');
+insert into auth.users (id, email, email_confirmed_at, raw_user_meta_data) values
+  ('00000000-0000-0000-0000-0000000000a1', 'olu@example.org', now(), '{"name": "Olu Owner"}'),
+  ('00000000-0000-0000-0000-0000000000a2', 'vee@example.org', now(), '{"name": "Vee Viewer"}'),
+  ('00000000-0000-0000-0000-0000000000a3', 'cam@example.org', now(), '{"name": "Cam Commenter"}'),
+  ('00000000-0000-0000-0000-0000000000a4', 'eda@example.org', now(), '{"name": "Eda Editor"}'),
+  ('00000000-0000-0000-0000-0000000000a5', 'stan@example.org', now(), '{"name": "Stan Stranger"}');
 SQL
 PGRST_DB_URI="postgres://authenticator:authenticator@${PGHOST:-localhost}:${PGPORT:-5432}/$DB" \
 PGRST_DB_SCHEMAS=public PGRST_DB_ANON_ROLE=anon PGRST_JWT_SECRET="$SECRET" PGRST_SERVER_PORT="$PORT" \

@@ -10,21 +10,6 @@
 \set stranger  '00000000-0000-0000-0000-00000000000e'
 \set doc       '10000000-0000-0000-0000-000000000001'
 
--- Helpers, run as whoever is signed in.
-create function public.expect_error(p_sql text, p_code text, p_label text) returns void language plpgsql as $$
-begin
-  execute p_sql;
-  raise exception 'FAIL %: expected error %, but it succeeded', p_label, p_code;
-exception when others then
-  if sqlstate <> p_code then
-    raise exception 'FAIL %: expected %, got % (%)', p_label, p_code, sqlstate, sqlerrm;
-  end if;
-end $$;
-create function public.expect(p_ok boolean, p_label text) returns void language plpgsql as $$
-begin
-  if p_ok is not true then raise exception 'FAIL %', p_label; end if;
-end $$;
-grant execute on function public.expect_error(text, text, text), public.expect(boolean, text) to authenticated;
 
 -- Sign-up creates profiles.
 insert into auth.users (id, email, raw_user_meta_data) values

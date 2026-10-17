@@ -14,8 +14,9 @@ Never put the **service role key** in the app or in `.env`.
 
 ## Set up a project
 
-1. **Create the schema.** Open the project's SQL editor, paste
-   `migrations/20261017000000_elum_write.sql` and run it. Or, with the Supabase CLI:
+1. **Create the schema.** Open the project's SQL editor and run each file in
+   `migrations/` in order (`20261017000000_elum_write.sql`, then
+   `20261018000000_accounts_and_invites.sql`). Or, with the Supabase CLI:
 
    ```sh
    supabase link --project-ref <your-project-ref>
@@ -47,6 +48,44 @@ Never put the **service role key** in the app or in `.env`.
    Set the same two variables in your hosting provider for production builds.
    With them set, `npm run dev` and `npm run build` use Supabase; without them,
    Write falls back to its in-browser preview mode.
+
+## Share emails (Brevo)
+
+Every new share and every invite adds a row to `public.share_emails`. The
+`send-share-emails` edge function sends them through Brevo and marks them sent.
+Until it is set up, the rows simply wait, so nothing is lost.
+
+1. Deploy the function and set its secrets:
+
+   ```sh
+   supabase functions deploy send-share-emails --no-verify-jwt
+   supabase secrets set BREVO_API_KEY=... SHARE_EMAIL_FROM="ELUM Write <write@your-domain>" \
+     APP_URL=https://write.your-domain CRON_SECRET=<a long random string>
+   ```
+
+   The sender address must be verified in Brevo.
+
+2. Run it every minute (Database → Extensions: turn on `pg_cron` and `pg_net`), then in the SQL editor:
+
+   ```sql
+   select cron.schedule('send-share-emails', '* * * * *', $$
+     select net.http_post(
+       url := 'https://<project-ref>.supabase.co/functions/v1/send-share-emails',
+       headers := jsonb_build_object('Authorization', 'Bearer <the CRON_SECRET>')
+     )
+   $$);
+   ```
+
+People with a Type account are skipped: their shares will arrive in the Type inbox once it exists.
+
+## Accounts and invites
+
+- Every account has a name and an `account_type`: `external` (their own email
+  provider) or `type` (an ELUM Type inbox, not available yet). Sign-up offers Type as "coming soon".
+- Editors can share with any email address. If no account uses it, an invite
+  waits in `document_invites`. It becomes access only when someone **verifies**
+  that address (by confirming at sign-up, or confirming a changed email), so an
+  unverified sign-up cannot claim another person's invite.
 
 ## What the database enforces
 
