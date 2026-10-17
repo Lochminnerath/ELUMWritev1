@@ -16,7 +16,8 @@ Never put the **service role key** in the app or in `.env`.
 
 1. **Create the schema.** Open the project's SQL editor and run each file in
    `migrations/` in order (`20261017000000_elum_write.sql`, then
-   `20261018000000_accounts_and_invites.sql`). Or, with the Supabase CLI:
+   `20261018000000_accounts_and_invites.sql`, then `20261019000000_preferences.sql`).
+   Or, with the Supabase CLI:
 
    ```sh
    supabase link --project-ref <your-project-ref>
@@ -90,6 +91,14 @@ more) and how to install them are in [docs/EMAIL.md](../docs/EMAIL.md).
   waits in `document_invites`. It becomes access only when someone **verifies**
   that address (by confirming at sign-up, or confirming a changed email), so an
   unverified sign-up cannot claim another person's invite.
+
+## Preferences
+
+Custom colours, the personal spelling dictionary and spelling settings are kept in
+`user_preferences`, one row per person, readable only by that person. The app changes
+them through `update_preferences(patch)`, which merges, so two devices changing
+different settings do not undo each other. Until the third migration is run, Write
+still works but shows "Your settings were not saved" when someone saves a colour.
 
 ## What the database enforces
 

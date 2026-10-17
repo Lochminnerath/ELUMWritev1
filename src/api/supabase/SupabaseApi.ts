@@ -2,6 +2,7 @@ import { createClient, type Session as AuthSession, type SupabaseClient } from '
 import { ACCEPTED_IMAGE_TYPES, MAX_ASSET_BYTES, type ElumApi } from '../client';
 import { buildPreview, COMMENT_MARK, emptyDocument, stripMarks, SUPABASE_ASSET_PREFIX } from '../content';
 import { ApiError } from '../errors';
+import { cleanPreferencesPatch, normalizePreferences, type Preferences } from '../preferences';
 import type {
   Asset,
   CommentThread,
@@ -227,6 +228,21 @@ export class SupabaseApi implements ElumApi {
       await this.sb.from('profiles').update({ name: cleanName(input.name) }).eq('id', me).select(PROFILE).single<ProfileRow>(),
     );
     return toUser(row);
+  }
+
+  async getPreferences(): Promise<Preferences> {
+    const me = await this.me();
+    const { data, error } = await this.sb.from('user_preferences').select('preferences').eq('user_id', me).maybeSingle<{ preferences: unknown }>();
+    if (error) throw toApiError(error);
+    return normalizePreferences(data?.preferences);
+  }
+
+  async updatePreferences(patch: Partial<Preferences>): Promise<Preferences> {
+    await this.me();
+    // Merged on the server, so two devices changing different settings do not undo each other.
+    const { data, error } = await this.sb.rpc('update_preferences', { patch: cleanPreferencesPatch(patch) });
+    if (error) throw toApiError(error);
+    return normalizePreferences(data);
   }
 
   onUnauthorized(handler: () => void): () => void {

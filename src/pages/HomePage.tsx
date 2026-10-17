@@ -1,4 +1,4 @@
-import { Copy, EllipsisVertical, ExternalLink, LayoutGrid, LayoutList, LogOut, PenLine, Plus, Search, Trash2, Users, X } from 'lucide-react';
+import { Copy, EllipsisVertical, ExternalLink, Files, LayoutGrid, LayoutList, LogOut, PenLine, Plus, Search, Trash2, User, Users, X, type LucideIcon } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { api, errorMessage, type DocumentFilter, type DocumentSummary } from '../api';
@@ -24,10 +24,10 @@ type View = 'grid' | 'list';
 const ICON = { size: 16, strokeWidth: 1.75 };
 const VIEW_KEY = 'elum.home.view';
 
-const FILTERS: { value: DocumentFilter; label: string }[] = [
-  { value: 'all', label: 'All' },
-  { value: 'owned', label: 'Mine' },
-  { value: 'shared', label: 'Shared with me' },
+const FILTERS: { value: DocumentFilter; label: string; title: string; icon: LucideIcon }[] = [
+  { value: 'all', label: 'All documents', title: 'All documents', icon: Files },
+  { value: 'owned', label: 'Mine', title: 'Your documents', icon: User },
+  { value: 'shared', label: 'Shared with me', title: 'Shared with you', icon: Users },
 ];
 
 const SORTS: { value: Sort; label: string }[] = [
@@ -61,11 +61,12 @@ export function HomePage() {
   const load = useCallback(async () => {
     try {
       setLoadError(null);
-      setDocs(await api.listDocuments(filter));
+      // Everything at once: filters switch instantly and show their counts.
+      setDocs(await api.listDocuments('all'));
     } catch (e) {
       setLoadError(errorMessage(e));
     }
-  }, [filter]);
+  }, []);
 
   useEffect(() => {
     void load();
@@ -126,12 +127,19 @@ export function HomePage() {
   const visible = useMemo(() => {
     if (!docs) return null;
     const q = query.trim().toLowerCase();
+    const inFilter = docs.filter((d) => filter === 'all' || (filter === 'owned' ? d.role === 'owner' : d.role !== 'owner'));
     const matches = q
-      ? docs.filter((d) => d.title.toLowerCase().includes(q) || d.preview.some((b) => b.text?.toLowerCase().includes(q)))
-      : docs;
+      ? inFilter.filter((d) => d.title.toLowerCase().includes(q) || d.preview.some((b) => b.text?.toLowerCase().includes(q)))
+      : inFilter;
     const time = (d: DocumentSummary) => Date.parse(sort === 'recent' ? (d.lastOpenedAt ?? d.updatedAt) : d.updatedAt);
     return [...matches].sort((a, b) => (sort === 'title' ? a.title.localeCompare(b.title) : time(b) - time(a)));
-  }, [docs, query, sort]);
+  }, [docs, query, sort, filter]);
+
+  const counts = useMemo(() => {
+    if (!docs) return null;
+    const owned = docs.filter((d) => d.role === 'owner').length;
+    return { all: docs.length, owned, shared: docs.length - owned } satisfies Record<DocumentFilter, number>;
+  }, [docs]);
 
   const whenLabel = (d: DocumentSummary) =>
     sort !== 'modified' && d.lastOpenedAt ? `Opened ${formatWhenInline(d.lastOpenedAt)}` : `Edited ${formatWhenInline(d.updatedAt)}`;
@@ -170,41 +178,52 @@ export function HomePage() {
         </div>
       </header>
 
-      <section className="home__start" aria-labelledby="start-heading">
-        <div className="home__inner">
-          <div className="home__greeting">
-            <h1 id="start-heading">Start writing, {firstName}</h1>
-          </div>
-          <div className="home__templates">
-            <button type="button" className="template" onClick={() => void create()} disabled={creating}>
-              <span className="template__page template__page--blank">
-                {creating ? <Loader size={32} label="Creating document" /> : <Plus size={36} strokeWidth={1.5} />}
-              </span>
-              <span className="template__name">Blank document</span>
-            </button>
-            {TEMPLATES.map((tpl) => (
-              <button key={tpl.id} type="button" className="template" onClick={() => void create(tpl)} disabled={creating}>
-                <span className="template__page">
-                  <DocThumbnail blocks={buildPreview(tpl.content())} />
-                </span>
-                <span className="template__name">{tpl.name}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-      </section>
+      <div className="home__layout">
+        <aside className="home__side" aria-label="Start and filter">
+          <button type="button" className="new-doc-btn" onClick={() => void create()} disabled={creating}>
+            {creating ? <Loader size={20} label="Creating document" /> : <Plus size={20} strokeWidth={2} />}
+            New document
+          </button>
 
-      <main className="home__inner home__docs" aria-labelledby="docs-heading">
-        <div className="home__toolbar">
-          <h2 id="docs-heading" className="home__heading">
-            Your documents
-          </h2>
-          <div className="segmented" role="group" aria-label="Show">
+          <nav className="home__nav" aria-label="Show">
             {FILTERS.map((f) => (
-              <button key={f.value} type="button" aria-pressed={filter === f.value} onClick={() => setFilter(f.value)}>
-                {f.label}
+              <button key={f.value} type="button" className="home__nav-item" aria-pressed={filter === f.value} onClick={() => setFilter(f.value)}>
+                <f.icon size={18} strokeWidth={1.75} />
+                <span>{f.label}</span>
+                {counts && <span className="home__nav-count">{counts[f.value]}</span>}
               </button>
             ))}
+          </nav>
+
+          <section className="home__start" aria-labelledby="start-heading">
+            <h2 id="start-heading" className="home__side-label">
+              Start from
+            </h2>
+            <ul className="home__templates">
+              {TEMPLATES.map((tpl) => (
+                <li key={tpl.id}>
+                  <button type="button" className="template" onClick={() => void create(tpl)} disabled={creating}>
+                    <span className="template__page">
+                      <DocThumbnail blocks={buildPreview(tpl.content())} />
+                    </span>
+                    <span className="template__text">
+                      <span className="template__name">{tpl.name}</span>
+                      <span className="template__description">{tpl.description}</span>
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </section>
+        </aside>
+
+      <main className="home__docs" aria-labelledby="docs-heading">
+        <div className="home__toolbar">
+          <div className="home__hero">
+            <p className="home__hello">Hello, {firstName}</p>
+            <h1 id="docs-heading" className="home__heading">
+              {FILTERS.find((f) => f.value === filter)!.title}
+            </h1>
           </div>
           <div className="home__toolbar-end">
             <label className="visually-hidden" htmlFor="sort">
@@ -323,6 +342,7 @@ export function HomePage() {
           </table>
         )}
       </main>
+      </div>
 
       <RenameDialog
         doc={renaming}

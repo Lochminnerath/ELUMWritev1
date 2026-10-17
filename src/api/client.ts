@@ -18,6 +18,7 @@ import type {
   SignUpInput,
   User,
 } from './types';
+import type { Preferences } from './preferences';
 
 /**
  * Everything ELUM Write asks of its backend. `LocalApi` implements it inside
@@ -36,6 +37,10 @@ export interface ElumApi {
   signIn(input: SignInInput): Promise<Session>;
   signOut(): Promise<void>;
   updateProfile(input: { name: string }): Promise<User>;
+  /** Settings saved with the account (custom colours, spelling dictionary), so they follow the person. */
+  getPreferences(): Promise<Preferences>;
+  /** Changes some settings and returns all of them. */
+  updatePreferences(patch: Partial<Preferences>): Promise<Preferences>;
   /** Called when the server rejects the session (expired or revoked). Returns an unsubscribe function. */
   onUnauthorized(handler: () => void): () => void;
 

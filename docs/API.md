@@ -83,11 +83,17 @@ interface Asset { id: string; url: string; mimeType: string; size: number }
 | POST | `/auth/signout` | | 204, revokes the token |
 | GET | `/auth/session` | | `Session` for the current token, or 401 |
 | PATCH | `/me` | `{ name }` | `User` |
+| GET | `/me/preferences` | | `Preferences` |
+| PATCH | `/me/preferences` | any of `{ colors, dictionary, spellcheck, spellLanguage }` | `Preferences`, all of them |
 
 - Emails are unique and compared case-insensitively. Names are required. Passwords are at least 8 characters.
 - Hash passwords on the server (argon2id or bcrypt). Rate-limit sign-in by email and by IP.
 - Sessions last 30 days in the local API. Any lifetime works; the app handles 401 at any time.
 - New accounts should get a "Welcome to Write" document (`src/api/welcome.ts` has the content).
+- Preferences follow the person to every device and only they can read them. A PATCH replaces
+  the keys it sends and keeps the rest. Shapes and limits are in `src/api/preferences.ts`:
+  up to 14 custom colours (`#rrggbb`), up to 5,000 dictionary words, `spellLanguage` is
+  `en-US` or `en-GB`.
 
 ## People
 

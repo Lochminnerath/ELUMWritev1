@@ -1,5 +1,6 @@
 import type { ElumApi } from '../client';
 import { ApiError, type ApiErrorCode } from '../errors';
+import { normalizePreferences, type Preferences } from '../preferences';
 import { tokenStore } from '../tokenStore';
 import type {
   Asset,
@@ -84,6 +85,14 @@ export class HttpApi implements ElumApi {
 
   updateProfile(input: { name: string }): Promise<User> {
     return this.request('PATCH', '/me', input);
+  }
+
+  async getPreferences(): Promise<Preferences> {
+    return normalizePreferences(await this.request('GET', '/me/preferences'));
+  }
+
+  async updatePreferences(patch: Partial<Preferences>): Promise<Preferences> {
+    return normalizePreferences(await this.request('PATCH', '/me/preferences', patch));
   }
 
   onUnauthorized(handler: () => void): () => void {

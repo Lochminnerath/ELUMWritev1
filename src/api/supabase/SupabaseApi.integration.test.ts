@@ -178,4 +178,16 @@ describe.skipIf(!URL || !SECRET)('SupabaseApi against Postgres and PostgREST', (
     expect(await code(owner.getDocument(doc.id))).toBe('not_found');
     await viewer.deleteDocument(copy.id);
   });
+
+  it('keeps preferences per person and merges changes', async () => {
+    const owner = as('owner');
+    const viewer = as('viewer');
+    expect((await owner.getPreferences()).colors).toEqual([]);
+    await owner.updatePreferences({ colors: ['#FF8800', 'not a colour'] });
+    const merged = await owner.updatePreferences({ dictionary: ['ELUM'], spellLanguage: 'en-GB' });
+    expect(merged.colors).toEqual(['#ff8800']);
+    expect(merged.dictionary).toEqual(['ELUM']);
+    expect((await owner.getPreferences()).spellLanguage).toBe('en-GB');
+    expect((await viewer.getPreferences()).dictionary).toEqual([]);
+  });
 });

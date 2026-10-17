@@ -78,6 +78,8 @@ export interface Tables {
   comments: Record<string, CommentRow>;
   /** Access for addresses with no account yet, keyed by `${docId}:${email}`. */
   invites: Record<string, InviteRow>;
+  /** Settings that follow the person, keyed by user id. */
+  preferences: Record<string, unknown>;
 }
 
 export type TableName = keyof Tables;

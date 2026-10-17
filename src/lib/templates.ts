@@ -3,6 +3,8 @@ import type { DocNode } from '../api';
 export interface Template {
   id: string;
   name: string;
+  /** One line on what it is for. */
+  description: string;
   title: string;
   content: () => DocNode;
 }
@@ -25,6 +27,7 @@ export const TEMPLATES: Template[] = [
   {
     id: 'notes',
     name: 'Meeting notes',
+    description: 'Agenda, notes and next steps',
     title: 'Meeting notes',
     content: () => ({
       type: 'doc',
@@ -44,6 +47,7 @@ export const TEMPLATES: Template[] = [
   {
     id: 'letter',
     name: 'Letter',
+    description: 'Addresses, date and a greeting',
     title: 'Letter',
     content: () => ({
       type: 'doc',
@@ -66,6 +70,7 @@ export const TEMPLATES: Template[] = [
   {
     id: 'brief',
     name: 'Project brief',
+    description: 'Goal, scope and timeline',
     title: 'Project brief',
     content: () => ({
       type: 'doc',

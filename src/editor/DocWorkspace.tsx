@@ -1,6 +1,24 @@
 import type { Editor } from '@tiptap/core';
 import { EditorContent, useEditor, useEditorState } from '@tiptap/react';
-import { CloudCheck, CloudOff, LoaderCircle, MessageSquare, Share2, TriangleAlert } from 'lucide-react';
+import {
+  ChevronDown,
+  CloudCheck,
+  CloudOff,
+  Copy,
+  Download,
+  FilePlus2,
+  FolderOpen,
+  HardDrive,
+  LogOut,
+  MessageSquare,
+  Minus,
+  PenLine,
+  Plus,
+  Printer,
+  TriangleAlert,
+  Trash2,
+  UserPlus,
+} from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { api, errorMessage, isApiError, type CommentThread, type DocNode, type DocumentRecord } from '../api';
@@ -8,8 +26,10 @@ import { ACCEPTED_IMAGE_TYPES } from '../api/client';
 import { emptyDocument } from '../api/content';
 import { canComment, canEdit } from '../api/roles';
 import { useUser } from '../auth/AuthProvider';
-import { DocIcon } from '../components/Brand';
+import { DocIcon, WriteMark } from '../components/Brand';
 import { Dialog } from '../components/Dialog';
+import { Loader } from '../components/Loader';
+import { Menu, type MenuEntry } from '../components/Menu';
 import { useToast } from '../components/Toast';
 import { UserMenu } from '../components/UserMenu';
 import { useMediaQuery, usePersistedState } from '../lib/hooks';
@@ -20,19 +40,24 @@ import { CommentsPanel } from './CommentsPanel';
 import { findCommentRanges, getCommentDraft } from './extensions/Comment';
 import { buildExtensions } from './extensions/index';
 import { ALLOW_META } from './extensions/Permissions';
-import { downloadHtml, downloadText } from './exporters';
+import { downloadHtml, downloadText, printDocument } from './exporters';
 import { loadFonts } from './fonts';
 import { clearFormatting, ZOOMS } from './format';
-import { hasMod } from './keys';
-import { MenuBar, type PageMode } from './MenuBar';
+import { hasMod, keyLabel } from './keys';
+import type { PageMode } from './pageMode';
 import { ShareDialog } from './ShareDialog';
+import { InsertPanel, OutlinePanel, PagePanel, Rail, SpellingPanel, type PanelId } from './SidePanels';
+import { SpellMenu } from './spelling/SpellMenu';
+import { useSpellChecker, useSpelling } from './spelling/useSpelling';
 import { Toolbar } from './toolbar/Toolbar';
 import { useAutosave, type SaveStatus } from './useAutosave';
 
 const POLL_MS = 15_000;
+const MENU_ICON = { size: 16, strokeWidth: 1.75 };
 const isZoom = (v: unknown): v is number => typeof v === 'number' && ZOOMS.includes(v);
 const isBool = (v: unknown): v is boolean => typeof v === 'boolean';
 const isPageMode = (v: unknown): v is PageMode => v === 'theme' || v === 'paper';
+const isPanel = (v: unknown): v is PanelId | null => v === null || v === 'outline' || v === 'insert' || v === 'spelling' || v === 'page';
 
 function imageFiles(list: FileList | null | undefined): File[] {
   return Array.from(list ?? []).filter((f) => ACCEPTED_IMAGE_TYPES.includes(f.type));
@@ -69,6 +94,9 @@ export function DocWorkspace({ initialDoc, initialComments }: Props) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [zoom, setZoom] = usePersistedState('elum.editor.zoom', 100, isZoom);
   const [pageMode, setPageMode] = usePersistedState<PageMode>('elum.editor.page', 'theme', isPageMode);
+  // The tool panel is remembered on wide screens; on small screens it opens as a drawer on demand.
+  const [widePanel, setWidePanel] = usePersistedState<PanelId | null>('elum.editor.panel', null, isPanel);
+  const [drawerPanel, setDrawerPanel] = useState<PanelId | null>(null);
   const [shareOpen, setShareOpen] = useState(false);
   const [wordCountOpen, setWordCountOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
@@ -83,6 +111,8 @@ export function DocWorkspace({ initialDoc, initialComments }: Props) {
   const wide = useMediaQuery('(min-width: 1180px)');
   const narrow = useMediaQuery('(max-width: 860px)');
   const commentsOpen = wide ? panelOpen : drawerOpen;
+  const panel = narrow ? drawerPanel : widePanel;
+  const setPanel = narrow ? setDrawerPanel : setWidePanel;
   const setCommentsOpen = useCallback((open: boolean) => (wide ? setPanelOpen(open) : setDrawerOpen(open)), [wide, setPanelOpen]);
 
   const role = doc.role;
@@ -91,9 +121,10 @@ export function DocWorkspace({ initialDoc, initialComments }: Props) {
 
   useEffect(() => loadFonts(), []);
 
+  const spellChecker = useSpellChecker();
   const extensions = useMemo(
-    () => buildExtensions({ resolveImageSrc: (src) => api.resolveAssetUrl(src), placeholder: 'Start writing' }),
-    [],
+    () => buildExtensions({ resolveImageSrc: (src) => api.resolveAssetUrl(src), placeholder: 'Start writing', spellChecker }),
+    [spellChecker],
   );
 
   const editor = useEditor({
@@ -104,7 +135,8 @@ export function DocWorkspace({ initialDoc, initialComments }: Props) {
       attributes: {
         class: 'doc-content',
         'aria-label': 'Document text',
-        spellcheck: 'true',
+        // Write checks spelling itself, the same on every device (see spelling/).
+        spellcheck: 'false',
       },
       handlePaste: (_view, event) => {
         const files = imageFiles(event.clipboardData?.files);
@@ -148,6 +180,8 @@ export function DocWorkspace({ initialDoc, initialComments }: Props) {
   }, [editor, role, editable, commentable]);
 
   const autosave = useAutosave(editor, doc.id, initialDoc.version);
+  const spelling = useSpelling(editor, spellChecker, editable);
+  const spellingCount = useEditorState({ editor, selector: ({ editor: e }) => e?.storage.spellcheck.issues.length ?? 0 }) ?? 0;
 
   // ---------------------------------------------------------------- title
 
@@ -328,12 +362,25 @@ export function DocWorkspace({ initialDoc, initialComments }: Props) {
     }
   };
 
+  const print = useCallback(
+    (asPdf = false) => {
+      if (!editor) return;
+      if (asPdf) toast('In the print window, choose “Save as PDF” as the destination.');
+      printDocument(editor, title, api).catch((e) => toast(errorMessage(e), { tone: 'error' }));
+    },
+    [editor, title, toast],
+  );
+
   // Shortcuts that live outside the editor's own keymap.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (!hasMod(e) || !editor) return;
       const key = e.key.toLowerCase();
-      if (key === 's') {
+      if (key === 'p') {
+        // Print a clean copy rather than the editor page.
+        e.preventDefault();
+        print();
+      } else if (key === 's') {
         e.preventDefault();
         void autosave.saveNow();
         toast('Write saves your changes as you go.');
@@ -358,7 +405,7 @@ export function DocWorkspace({ initialDoc, initialComments }: Props) {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [editor, editable, autosave, startComment, toast]);
+  }, [editor, editable, autosave, startComment, toast, print]);
 
   const words = useEditorState({ editor, selector: ({ editor: e }) => e?.storage.characterCount.words() ?? 0 });
 
@@ -367,71 +414,92 @@ export function DocWorkspace({ initialDoc, initialComments }: Props) {
 
   const showComments = commentable && commentsOpen;
   const effectiveZoom = narrow ? 100 : zoom;
+  const openPanel = (id: PanelId) => setPanel(id);
+  const toolPanel = panel && (editable || (panel !== 'insert' && panel !== 'spelling')) ? panel : null;
+
+  const documentMenu = (): MenuEntry[] => [
+    { label: 'New document', icon: <FilePlus2 {...MENU_ICON} />, onSelect: () => void newDocument() },
+    { label: 'Your documents', icon: <FolderOpen {...MENU_ICON} />, onSelect: () => navigate('/') },
+    { label: 'Make a copy', icon: <Copy {...MENU_ICON} />, onSelect: () => void duplicate() },
+    { label: 'Rename', icon: <PenLine {...MENU_ICON} />, disabled: !editable, onSelect: () => titleInput.current?.focus() },
+    'separator',
+    { label: 'Share', icon: <UserPlus {...MENU_ICON} />, onSelect: () => setShareOpen(true) },
+    {
+      label: 'Download',
+      icon: <Download {...MENU_ICON} />,
+      items: [
+        { label: 'PDF (.pdf)', hint: 'Save as PDF', onSelect: () => print(true) },
+        { label: 'Web page (.html)', onSelect: () => void downloadHtml(editor, title, api) },
+        { label: 'Plain text (.txt)', onSelect: () => downloadText(editor, title) },
+      ],
+    },
+    { label: 'Print', icon: <Printer {...MENU_ICON} />, shortcut: keyLabel('Mod+P'), onSelect: () => print() },
+    ...(narrow
+      ? ([
+          'separator',
+          { label: 'Outline', onSelect: () => openPanel('outline') },
+          ...(editable ? [{ label: 'Spelling', onSelect: () => openPanel('spelling') }, { label: 'Insert', onSelect: () => openPanel('insert') }] : []),
+          { label: 'Page and view', onSelect: () => openPanel('page') },
+        ] as MenuEntry[])
+      : []),
+    'separator',
+    role === 'owner'
+      ? { label: 'Delete', icon: <Trash2 {...MENU_ICON} />, danger: true, onSelect: () => setConfirmRemove(true) }
+      : { label: 'Remove from my documents', icon: <LogOut {...MENU_ICON} />, onSelect: () => void remove() },
+  ];
 
   return (
     <div className="workspace">
-      <header className="doc-header">
-        <Link to="/" className="doc-header__home" aria-label="Your documents" data-tip="Your documents">
-          <DocIcon size={40} />
+      <header className="ws-bar">
+        <Link to="/" className="ws-bar__home" aria-label="Your documents" data-tip="Your documents">
+          <WriteMark size={30} />
         </Link>
-        <div className="doc-header__main">
-          <div className="doc-header__titlebar">
-            <input
-              ref={titleInput}
-              className="doc-title"
-              value={title}
-              readOnly={!editable}
-              aria-label="Document title"
-              maxLength={200}
-              size={Math.max(12, title.length + 1)}
-              onChange={(e) => setTitle(e.target.value)}
-              onFocus={(e) => editable && e.currentTarget.select()}
-              onBlur={() => void commitTitle()}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault();
-                  editor.commands.focus();
-                } else if (e.key === 'Escape') {
-                  setTitle(doc.title);
-                  editor.commands.focus();
-                }
-              }}
-            />
-            {editable ? (
-              <SaveIndicator status={autosave.status} uploads={uploads} onConflict={() => setConflictDismissed(false)} />
-            ) : (
-              <span className="role-badge">{commentable ? 'Commenting' : 'View only'}</span>
-            )}
-            {role !== 'owner' && <span className="doc-header__owner muted">Owned by {doc.owner.name}</span>}
+        <div className="ws-bar__doc">
+          <DocIcon size={26} />
+          <div className="ws-bar__titles">
+            <div className="ws-bar__titleline">
+              <input
+                ref={titleInput}
+                className="doc-title"
+                value={title}
+                readOnly={!editable}
+                aria-label="Document title"
+                maxLength={200}
+                size={Math.max(12, title.length + 1)}
+                onChange={(e) => setTitle(e.target.value)}
+                onFocus={(e) => editable && e.currentTarget.select()}
+                onBlur={() => void commitTitle()}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    editor.commands.focus();
+                  } else if (e.key === 'Escape') {
+                    setTitle(doc.title);
+                    editor.commands.focus();
+                  }
+                }}
+              />
+              <Menu
+                label="Document"
+                items={documentMenu}
+                trigger={(props) => (
+                  <button type="button" className="doc-menu-btn" aria-label="Document menu" data-tip="Document menu" {...props}>
+                    <ChevronDown size={16} strokeWidth={2} />
+                  </button>
+                )}
+              />
+            </div>
+            <div className="ws-bar__meta">
+              {editable ? (
+                <SaveIndicator status={autosave.status} uploads={uploads} onConflict={() => setConflictDismissed(false)} />
+              ) : (
+                <span className="role-badge">{commentable ? 'Commenting' : 'View only'}</span>
+              )}
+              {role !== 'owner' && <span className="ws-bar__owner muted">Owned by {doc.owner.name}</span>}
+            </div>
           </div>
-          <MenuBar
-            editor={editor}
-            role={role}
-            actions={{
-              newDocument: () => void newDocument(),
-              openDocuments: () => navigate('/'),
-              duplicate: () => void duplicate(),
-              share: () => setShareOpen(true),
-              downloadHtml: () => void downloadHtml(editor, title, api),
-              downloadText: () => downloadText(editor, title),
-              print: () => window.print(),
-              rename: () => titleInput.current?.focus(),
-              remove: () => (role === 'owner' ? setConfirmRemove(true) : void remove()),
-              insertImage: () => fileInput.current?.click(),
-              insertLink: () => setLinkOpen(true),
-              addComment: startComment,
-              wordCount: () => setWordCountOpen(true),
-              shortcuts: () => setShortcutsOpen(true),
-              zoom,
-              setZoom,
-              commentsOpen: showComments,
-              toggleComments: () => setCommentsOpen(!commentsOpen),
-              pageMode,
-              setPageMode,
-            }}
-          />
         </div>
-        <div className="doc-header__end">
+        <div className="ws-bar__end">
           {commentable && (
             <button
               type="button"
@@ -445,8 +513,8 @@ export function DocWorkspace({ initialDoc, initialComments }: Props) {
               {openIds.length > 0 && <span className="comments-toggle__count">{openIds.length}</span>}
             </button>
           )}
-          <button type="button" className="elum-btn elum-btn--primary share-btn" onClick={() => setShareOpen(true)}>
-            <Share2 size={16} strokeWidth={2} />
+          <button type="button" className="share-btn" onClick={() => setShareOpen(true)}>
+            <UserPlus size={17} strokeWidth={2} />
             <span>Share</span>
           </button>
           <ThemeToggle className="icon-btn icon-btn--round hide-narrow" />
@@ -454,80 +522,136 @@ export function DocWorkspace({ initialDoc, initialComments }: Props) {
         </div>
       </header>
 
-      {editable && (
-        <div className="toolbar-row">
-          <Toolbar
-            editor={editor}
-            zoom={zoom}
-            onZoom={setZoom}
-            onInsertImage={() => fileInput.current?.click()}
-            onComment={startComment}
-            linkOpen={linkOpen}
-            onLinkOpenChange={setLinkOpen}
-          />
-        </div>
-      )}
-
-      <div className="canvas-wrap">
-        <div className="canvas">
-          <div className="canvas__inner" data-comments={showComments && wide ? 'aligned' : undefined}>
-            <div
-              className="page"
-              data-theme={pageMode === 'paper' ? 'light' : undefined}
-              data-hide-comments={!commentable || undefined}
-              style={{ zoom: effectiveZoom / 100 }}
-            >
-              <EditorContent editor={editor} />
-            </div>
-            {showComments && !wide && <div className="comments-scrim" onClick={() => setCommentsOpen(false)} aria-hidden="true" />}
-            {showComments && (
-              <CommentsPanel
+      <div className="ws-body">
+        {!narrow && (
+          <Rail active={toolPanel} onSelect={setPanel} editable={editable} spellingCount={spelling.on ? spellingCount : 0} onShortcuts={() => setShortcutsOpen(true)} />
+        )}
+        {toolPanel && narrow && <div className="comments-scrim" onClick={() => setPanel(null)} aria-hidden="true" />}
+        {toolPanel && (
+          <div className="side-panel-wrap" data-drawer={narrow || undefined}>
+            {toolPanel === 'outline' && <OutlinePanel editor={editor} onClose={() => setPanel(null)} />}
+            {toolPanel === 'insert' && (
+              <InsertPanel
                 editor={editor}
-                threads={comments}
-                me={me}
-                isOwner={role === 'owner'}
+                onClose={() => setPanel(null)}
+                onImage={() => fileInput.current?.click()}
+                onLink={() => setLinkOpen(true)}
+                onComment={startComment}
+              />
+            )}
+            {toolPanel === 'spelling' && <SpellingPanel editor={editor} spelling={spelling} onClose={() => setPanel(null)} />}
+            {toolPanel === 'page' && (
+              <PagePanel
+                editor={editor}
+                onClose={() => setPanel(null)}
+                zoom={zoom}
+                setZoom={setZoom}
+                pageMode={pageMode}
+                setPageMode={setPageMode}
+                commentsOpen={showComments}
                 canComment={commentable}
-                activeId={activeComment}
-                onActivate={activateComment}
-                onSubmitDraft={submitDraft}
-                onCancelDraft={() => editor.commands.setCommentDraft(null)}
-                onReply={async (id, body) => {
-                  try {
-                    replaceThread(await api.replyToComment(doc.id, id, body));
-                  } catch (e) {
-                    toast(errorMessage(e), { tone: 'error' });
-                    throw e;
-                  }
-                }}
-                onResolve={async (id, resolved) => {
-                  try {
-                    replaceThread(await api.setCommentResolved(doc.id, id, resolved));
-                    if (resolved && activeComment === id) setActiveComment(null);
-                  } catch (e) {
-                    toast(errorMessage(e), { tone: 'error' });
-                  }
-                }}
-                onDelete={async (id) => {
-                  try {
-                    await api.deleteComment(doc.id, id);
-                    setComments((list) => list.filter((c) => c.id !== id));
-                    editor.commands.removeCommentAnchor(id);
-                  } catch (e) {
-                    toast(errorMessage(e), { tone: 'error' });
-                  }
-                }}
-                onClose={() => setCommentsOpen(false)}
-                aligned={wide}
-                layoutKey={`${effectiveZoom}-${pageMode}`}
+                toggleComments={() => setCommentsOpen(!commentsOpen)}
               />
             )}
           </div>
+        )}
+
+        <div className="canvas-wrap">
+          <div className="canvas">
+            <div className="canvas__inner" data-comments={showComments && wide ? 'aligned' : undefined} data-dock={editable || undefined}>
+              <div
+                className="page"
+                data-theme={pageMode === 'paper' ? 'light' : undefined}
+                data-hide-comments={!commentable || undefined}
+                style={{ zoom: effectiveZoom / 100 }}
+              >
+                <EditorContent editor={editor} />
+              </div>
+              {showComments && !wide && <div className="comments-scrim" onClick={() => setCommentsOpen(false)} aria-hidden="true" />}
+              {showComments && (
+                <CommentsPanel
+                  editor={editor}
+                  threads={comments}
+                  me={me}
+                  isOwner={role === 'owner'}
+                  canComment={commentable}
+                  activeId={activeComment}
+                  onActivate={activateComment}
+                  onSubmitDraft={submitDraft}
+                  onCancelDraft={() => editor.commands.setCommentDraft(null)}
+                  onReply={async (id, body) => {
+                    try {
+                      replaceThread(await api.replyToComment(doc.id, id, body));
+                    } catch (e) {
+                      toast(errorMessage(e), { tone: 'error' });
+                      throw e;
+                    }
+                  }}
+                  onResolve={async (id, resolved) => {
+                    try {
+                      replaceThread(await api.setCommentResolved(doc.id, id, resolved));
+                      if (resolved && activeComment === id) setActiveComment(null);
+                    } catch (e) {
+                      toast(errorMessage(e), { tone: 'error' });
+                    }
+                  }}
+                  onDelete={async (id) => {
+                    try {
+                      await api.deleteComment(doc.id, id);
+                      setComments((list) => list.filter((c) => c.id !== id));
+                      editor.commands.removeCommentAnchor(id);
+                    } catch (e) {
+                      toast(errorMessage(e), { tone: 'error' });
+                    }
+                  }}
+                  onClose={() => setCommentsOpen(false)}
+                  aligned={wide}
+                  layoutKey={`${effectiveZoom}-${pageMode}-${toolPanel}`}
+                />
+              )}
+            </div>
+          </div>
+
+          {editable && (
+            <div className="dock">
+              <Toolbar editor={editor} onInsertImage={() => fileInput.current?.click()} onComment={startComment} linkOpen={linkOpen} onLinkOpenChange={setLinkOpen} />
+            </div>
+          )}
+
+          <div className="status-bar">
+            <button type="button" className="status-bar__item" onClick={() => setWordCountOpen(true)} data-tip="Word count">
+              {words.toLocaleString()} {words === 1 ? 'word' : 'words'}
+            </button>
+            {!narrow && (
+              <div className="status-bar__zoom" role="group" aria-label="Zoom">
+                <button
+                  type="button"
+                  className="status-bar__step"
+                  aria-label="Zoom out"
+                  disabled={zoom === ZOOMS[0]}
+                  onClick={() => setZoom(ZOOMS[Math.max(0, ZOOMS.indexOf(zoom) - 1)])}
+                >
+                  <Minus size={14} strokeWidth={2} />
+                </button>
+                <button type="button" className="status-bar__item mono" onClick={() => setZoom(100)} data-tip="Reset zoom">
+                  {zoom}%
+                </button>
+                <button
+                  type="button"
+                  className="status-bar__step"
+                  aria-label="Zoom in"
+                  disabled={zoom === ZOOMS[ZOOMS.length - 1]}
+                  onClick={() => setZoom(ZOOMS[Math.min(ZOOMS.length - 1, ZOOMS.indexOf(zoom) + 1)])}
+                >
+                  <Plus size={14} strokeWidth={2} />
+                </button>
+              </div>
+            )}
+          </div>
         </div>
-        <button type="button" className="status-pill" onClick={() => setWordCountOpen(true)} data-tip="Word count">
-          {words.toLocaleString()} {words === 1 ? 'word' : 'words'}
-        </button>
       </div>
 
+      {editable && <SpellMenu editor={editor} spelling={spelling} />}
       <style>{commentRules}</style>
 
       <input
@@ -584,37 +708,37 @@ export function DocWorkspace({ initialDoc, initialComments }: Props) {
 }
 
 function SaveIndicator({ status, uploads, onConflict }: { status: SaveStatus; uploads: number; onConflict: () => void }) {
-  if (uploads > 0) {
+  // Where documents live: the account (Supabase or the ELUM API), or only this browser in preview mode.
+  const local = api.mode === 'local';
+  if (uploads > 0 || status === 'pending' || status === 'saving') {
     return (
       <span className="save-status" role="status">
-        <LoaderCircle className="spin" size={16} strokeWidth={1.75} /> <span className="save-status__label">Adding image</span>
+        <Loader size={18} label={uploads > 0 ? 'Adding image' : 'Saving'} />
+        <span className="save-status__label">{uploads > 0 ? 'Adding image' : 'Saving'}</span>
       </span>
     );
   }
   switch (status) {
-    case 'pending':
-    case 'saving':
-      return (
-        <span className="save-status" role="status">
-          <LoaderCircle className="spin" size={16} strokeWidth={1.75} /> <span className="save-status__label">Saving</span>
-        </span>
-      );
     case 'error':
       return (
         <span className="save-status" data-tone="error" role="status">
-          <CloudOff size={16} strokeWidth={1.75} /> <span className="save-status__label">Not saved yet. Trying again</span>
+          <CloudOff size={15} strokeWidth={1.75} /> <span className="save-status__label">Not saved yet. Trying again</span>
         </span>
       );
     case 'conflict':
       return (
         <button type="button" className="save-status save-status--button" data-tone="error" onClick={onConflict}>
-          <TriangleAlert size={16} strokeWidth={1.75} /> <span className="save-status__label">Changed elsewhere</span>
+          <TriangleAlert size={15} strokeWidth={1.75} /> <span className="save-status__label">Changed elsewhere</span>
         </button>
       );
     default:
-      return (
-        <span className="save-status" role="status" data-tip="Every change is saved as you go">
-          <CloudCheck size={16} strokeWidth={1.75} /> <span className="save-status__label">Saved</span>
+      return local ? (
+        <span className="save-status" data-tone="local" role="status" data-tip="Preview mode: documents stay in this browser until Write is connected to its server">
+          <HardDrive size={15} strokeWidth={1.75} /> <span className="save-status__label">Saved in this browser only</span>
+        </span>
+      ) : (
+        <span className="save-status" role="status" data-tip="Saved to your ELUM account, so it is on every device you sign in to">
+          <CloudCheck size={15} strokeWidth={1.75} /> <span className="save-status__label">Saved to your account</span>
         </span>
       );
   }

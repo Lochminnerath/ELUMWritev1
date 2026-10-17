@@ -8,6 +8,8 @@ import {
   Bold,
   CaseSensitive,
   ChevronDown,
+  Code,
+  Ellipsis,
   ImagePlus,
   IndentDecrease,
   IndentIncrease,
@@ -19,6 +21,8 @@ import {
   Redo2,
   RemoveFormatting,
   Strikethrough,
+  Subscript,
+  Superscript,
   Underline,
   Undo2,
   type LucideIcon,
@@ -36,7 +40,6 @@ import {
   setBlockStyle,
   shiftIndent,
   useFormatState,
-  ZOOMS,
 } from '../format';
 import { keyLabel } from '../keys';
 import { TEXT_CASES } from '../textCase';
@@ -93,15 +96,13 @@ const ALIGNS = [
 
 interface ToolbarProps {
   editor: Editor;
-  zoom: number;
-  onZoom: (zoom: number) => void;
   onInsertImage: () => void;
   onComment: () => void;
   linkOpen: boolean;
   onLinkOpenChange: (open: boolean) => void;
 }
 
-export function Toolbar({ editor, zoom, onZoom, onInsertImage, onComment, linkOpen, onLinkOpenChange }: ToolbarProps) {
+export function Toolbar({ editor, onInsertImage, onComment, linkOpen, onLinkOpenChange }: ToolbarProps) {
   const s = useFormatState(editor);
   const run = () => editor.chain().focus();
   const align = ALIGNS.find((a) => a.value === s.align) ?? ALIGNS[0];
@@ -157,16 +158,6 @@ export function Toolbar({ editor, zoom, onZoom, onInsertImage, onComment, linkOp
       </div>
       <span className="divider" />
       <Menu
-        label="Zoom"
-        items={ZOOMS.map((z) => ({ label: `${z}%`, checked: z === zoom, onSelect: () => onZoom(z) }))}
-        trigger={(props) => (
-          <DropButton label="Zoom" {...props}>
-            <span className="tb-select__value kbd">{zoom}%</span>
-          </DropButton>
-        )}
-      />
-      <span className="divider" />
-      <Menu
         label="Paragraph style"
         className="style-menu"
         items={BLOCK_STYLES.map((b, i) => ({
@@ -191,22 +182,32 @@ export function Toolbar({ editor, zoom, onZoom, onInsertImage, onComment, linkOp
         <ToolButton label="Bold" keys="Mod+B" icon={Bold} active={s.bold} onClick={() => run().toggleBold().run()} />
         <ToolButton label="Italic" keys="Mod+I" icon={Italic} active={s.italic} onClick={() => run().toggleItalic().run()} />
         <ToolButton label="Underline" keys="Mod+U" icon={Underline} active={s.underline} onClick={() => run().toggleUnderline().run()} />
-        <ToolButton label="Strikethrough" keys="Mod+Shift+S" icon={Strikethrough} active={s.strike} onClick={() => run().toggleStrike().run()} />
-        <ColorPicker editor={editor} kind="text" value={s.color} />
-        <ColorPicker editor={editor} kind="highlight" value={s.highlight} />
         <Menu
-          label="Change case"
+          label="More text styles"
           items={[
-            ...TEXT_CASES.map((c) => ({ label: c.label, onSelect: () => run().setTextCase(c.value).run() })),
-            'separator' as const,
-            { label: 'Cycle case', shortcut: keyLabel('Shift+F3'), onSelect: () => run().cycleTextCase().run() },
+            { label: 'Strikethrough', icon: <Strikethrough size={16} strokeWidth={1.75} />, shortcut: keyLabel('Mod+Shift+S'), checked: s.strike, onSelect: () => run().toggleStrike().run() },
+            { label: 'Superscript', icon: <Superscript size={16} strokeWidth={1.75} />, shortcut: keyLabel('Mod+.'), checked: editor.isActive('superscript'), onSelect: () => run().toggleSuperscript().run() },
+            { label: 'Subscript', icon: <Subscript size={16} strokeWidth={1.75} />, shortcut: keyLabel('Mod+,'), checked: editor.isActive('subscript'), onSelect: () => run().toggleSubscript().run() },
+            { label: 'Code', icon: <Code size={16} strokeWidth={1.75} />, shortcut: keyLabel('Mod+E'), checked: editor.isActive('code'), onSelect: () => run().toggleCode().run() },
+            'separator',
+            {
+              label: 'Change case',
+              icon: <CaseSensitive size={16} strokeWidth={1.75} />,
+              items: [
+                ...TEXT_CASES.map((c) => ({ label: c.label, onSelect: () => run().setTextCase(c.value).run() })),
+                'separator' as const,
+                { label: 'Cycle case', shortcut: keyLabel('Shift+F3'), onSelect: () => run().cycleTextCase().run() },
+              ],
+            },
           ]}
           trigger={(props) => (
-            <button type="button" className="icon-btn" aria-label="Change case" data-tip="Change case" onMouseDown={keep} {...props}>
-              <CaseSensitive {...ICON} />
+            <button type="button" className="icon-btn" aria-label="More text styles" data-tip="More text styles" onMouseDown={keep} {...props}>
+              <Ellipsis {...ICON} />
             </button>
           )}
         />
+        <ColorPicker editor={editor} kind="text" value={s.color} />
+        <ColorPicker editor={editor} kind="highlight" value={s.highlight} />
       </div>
       <span className="divider" />
       <div className="toolbar__group">
@@ -243,14 +244,28 @@ export function Toolbar({ editor, zoom, onZoom, onInsertImage, onComment, linkOp
       </div>
       <span className="divider" />
       <div className="toolbar__group">
-        <ToolButton label="Bulleted list" keys="Mod+Shift+8" icon={List} active={s.bulletList} onClick={() => run().toggleBulletList().run()} />
-        <ToolButton label="Numbered list" keys="Mod+Shift+7" icon={ListOrdered} active={s.orderedList} onClick={() => run().toggleOrderedList().run()} />
-        <ToolButton label="Checklist" keys="Mod+Shift+9" icon={ListTodo} active={s.taskList} onClick={() => run().toggleTaskList().run()} />
+        <Menu
+          label="Lists and indent"
+          items={[
+            { label: 'Bulleted list', icon: <List size={16} strokeWidth={1.75} />, shortcut: keyLabel('Mod+Shift+8'), checked: s.bulletList, onSelect: () => run().toggleBulletList().run() },
+            { label: 'Numbered list', icon: <ListOrdered size={16} strokeWidth={1.75} />, shortcut: keyLabel('Mod+Shift+7'), checked: s.orderedList, onSelect: () => run().toggleOrderedList().run() },
+            { label: 'Checklist', icon: <ListTodo size={16} strokeWidth={1.75} />, shortcut: keyLabel('Mod+Shift+9'), checked: s.taskList, onSelect: () => run().toggleTaskList().run() },
+            'separator',
+            { label: 'Increase indent', icon: <IndentIncrease size={16} strokeWidth={1.75} />, shortcut: keyLabel('Mod+]'), onSelect: () => shiftIndent(editor, 1) },
+            { label: 'Decrease indent', icon: <IndentDecrease size={16} strokeWidth={1.75} />, shortcut: keyLabel('Mod+['), onSelect: () => shiftIndent(editor, -1) },
+          ]}
+          trigger={(props) => {
+            const ListIcon = s.orderedList ? ListOrdered : s.taskList ? ListTodo : List;
+            return (
+              <DropButton label="Lists and indent" aria-pressed={s.bulletList || s.orderedList || s.taskList} {...props}>
+                <ListIcon {...ICON} />
+              </DropButton>
+            );
+          }}
+        />
       </div>
       <span className="divider" />
       <div className="toolbar__group">
-        <ToolButton label="Decrease indent" keys="Mod+[" icon={IndentDecrease} onClick={() => shiftIndent(editor, -1)} />
-        <ToolButton label="Increase indent" keys="Mod+]" icon={IndentIncrease} onClick={() => shiftIndent(editor, 1)} />
         <ToolButton label="Clear formatting" keys="Mod+\" icon={RemoveFormatting} onClick={() => clearFormatting(editor)} />
       </div>
     </div>

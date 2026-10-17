@@ -57,10 +57,20 @@ remove a shared document from your list. Start blank or from a template
 (meeting notes, letter, project brief). Every document has its own logo:
 `public/brand/write/elum-write-doc.svg` (and `-reversed` for dark grounds).
 
+**The editor.** Write has its own layout rather than a menu bar and a ribbon:
+- The bar holds the Write mark, the document's own logo and title, a document menu
+  (new, copy, rename, download, print, delete), comments and **Share**.
+- A tool rail on the left opens **Outline** (jump between headings), **Insert**,
+  **Spelling** and **Page and view** (zoom, page colour, counts).
+- Formatting sits in a floating **dock** at the bottom of the page.
+- The status beside the title shows the Write loader while saving, then where the
+  document lives: "Saved to your account" (Supabase or the ELUM API) or "Saved in this
+  browser only" (preview mode).
+
 **Writing and formatting.**
-- Type, delete, undo and redo. Changes save as you go, with a status beside the title.
+- Type, delete, undo and redo. Changes save as you go.
 - Bold, italic, underline, strikethrough, superscript, subscript, inline code.
-- Text colour and highlight from brand-tuned swatches, or any custom colour.
+- Text colour and highlight from brand-tuned swatches, or any colour from Write's own picker. Colours you make are saved to your account and appear on every device.
 - Change case: Sentence case, lowercase, UPPERCASE, Title Case, and Shift+F3 to cycle. Formatting is kept.
 - Fonts from a catalogue built for growth (see "Fonts" below), with search and live previews.
 - Font size in points, typed or picked, with bigger and smaller buttons.
@@ -72,7 +82,15 @@ remove a shared document from your list. Start blank or from a template
 - Bulleted, numbered and checklists; quotes; horizontal lines; links (Ctrl/Cmd+K).
 - Clear formatting, word count, keyboard shortcut sheet (Ctrl/Cmd+/).
 - Zoom from 50% to 200%. Page colour can follow light or dark mode, or always be white paper.
-- Download as a web page (images embedded) or plain text; print or save as PDF.
+- Download as PDF, a web page (images embedded) or plain text; print. Printing uses a clean copy of the document in a hidden frame, never the editor page itself.
+
+**Spelling.** Write checks spelling itself, so it is the same on every device and
+browser: Hunspell dictionaries for English (US) and English (UK) run in a background
+worker ([nspell](https://github.com/wooorm/nspell)). Misspelled words get a wavy line;
+right-click one for suggestions, add it to your dictionary or ignore it, or work
+through them all in the Spelling panel. The dictionary, the language and the on/off
+switch are saved to your account. Code, links, web and email addresses, ACRONYMS and
+mixedCase names are skipped.
 
 **Images.** Insert from your computer, drag them onto the page, or paste them.
 Select an image to resize it from any corner, set it to 25%, 50% or 100% of
@@ -107,15 +125,18 @@ src/
     content.ts         Document helpers shared by both (previews, comment rules)
     roles.ts           Viewer < commenter < editor < owner
   auth/                Session state, sign-in redirects
+  preferences/         Settings saved with the account (colours, dictionary)
   theme/               Light, dark and match-system
   components/          Menus, popovers, dialogs, toasts, tooltips, avatars, logos
   pages/               Sign in and sign up, documents home
   editor/              The document editor (loaded only when a document opens)
     extensions/        TipTap extensions: paragraph format, letter spacing, case,
                        Tab keys, comments, images, permissions
-    toolbar/           Toolbar controls: fonts, sizes, colours, links
+    toolbar/           The formatting dock: fonts, sizes, colours (own picker), links
+    spelling/          Spell check: worker, word finder, suggestions, menu
+    SidePanels.tsx     The tool rail and its panels
     fonts.ts           The font catalogue
-    DocWorkspace.tsx   Header, menus, toolbar, page, comments, autosave
+    DocWorkspace.tsx   Bar, rail, page, dock, comments, autosave
   styles/              Brand tokens (from the ELUM brand kit) and base styles
 public/brand/          Logos, Write marks, document logo, loaders
 docs/API.md            The contract for the ELUM API
