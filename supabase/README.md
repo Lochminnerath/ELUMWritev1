@@ -45,7 +45,8 @@ Never put the **service role key** in the app or in `.env`.
    VITE_SUPABASE_ANON_KEY=<anon / publishable key>
    ```
 
-   Set the same two variables in your hosting provider for production builds.
+   Set the same two variables in your hosting provider for production builds
+   (on Netlify: Site configuration, Environment variables; `netlify.toml` covers the rest).
    With them set, `npm run dev` and `npm run build` use Supabase; without them,
    Write falls back to its in-browser preview mode.
 
