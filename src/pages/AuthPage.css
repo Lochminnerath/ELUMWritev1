@@ -1,0 +1,204 @@
+.auth {
+  min-height: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+  background: var(--surface);
+}
+
+/* ---- Art panel: the Write mark, drawn large in glass ---- */
+.auth__art {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: var(--space-12);
+  background: var(--surface-glass);
+  border-right: 1px solid var(--hairline);
+}
+.auth__glow {
+  position: absolute;
+  inset: auto -20% -30% -20%;
+  height: 70%;
+  background: radial-gradient(closest-side, rgba(245, 154, 82, 0.18), transparent);
+  pointer-events: none;
+}
+.auth__discs {
+  --d: min(26vw, 300px);
+  position: absolute;
+  top: 46%;
+  left: 50%;
+  width: calc(var(--d) * 1.87);
+  height: var(--d);
+  translate: -50% -60%;
+}
+.auth__disc {
+  position: absolute;
+  top: 0;
+  width: var(--d);
+  height: var(--d);
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #ffffff, #e9ecf4 80%);
+  border: 2px solid #fbcfa8;
+  box-shadow: 0 24px 60px rgba(112, 147, 248, 0.14);
+  animation: disc-in var(--dur-hero) var(--ease) both;
+}
+.auth__disc--a {
+  left: 0;
+}
+.auth__disc--b {
+  left: calc(var(--d) * 0.615);
+  opacity: 0.92;
+  animation-delay: 80ms;
+}
+[data-theme='dark'] .auth__disc {
+  background: rgba(26, 32, 51, 0.9);
+  border-color: rgba(245, 154, 82, 0.6);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+}
+/* The lens: the overlap of the two discs, lit in apricot. */
+.auth__lens {
+  position: absolute;
+  top: 0;
+  left: calc(var(--d) * 0.615);
+  width: var(--d);
+  height: var(--d);
+  border-radius: 50%;
+  background: var(--write);
+  clip-path: circle(50% at calc(50% - var(--d) * 0.615) 50%);
+  animation: lens-in var(--dur-hero) var(--ease) 320ms both;
+}
+.auth__stop {
+  position: absolute;
+  left: calc(var(--d) * 1.6);
+  top: calc(var(--d) * 0.73);
+  width: calc(var(--d) * 0.27);
+  height: calc(var(--d) * 0.27);
+  border-radius: 50%;
+  background: var(--write);
+  animation: lens-in var(--dur-hero) var(--ease) 520ms both;
+}
+@keyframes disc-in {
+  from {
+    opacity: 0;
+    translate: 0 16px;
+  }
+}
+@keyframes lens-in {
+  from {
+    opacity: 0;
+  }
+}
+.auth__art-copy {
+  position: relative;
+}
+.auth__art-copy .label {
+  margin: 0 0 var(--space-3);
+}
+.auth__tagline {
+  margin: 0;
+  max-width: 460px;
+  font-family: var(--font-display);
+  font-weight: 300;
+  font-size: 40px;
+  line-height: 48px;
+  letter-spacing: -0.015em;
+}
+
+/* ---- Form ---- */
+.auth__main {
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-6) var(--space-8);
+}
+.auth__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.auth__form {
+  width: 100%;
+  max-width: 400px;
+  margin: auto;
+  padding: var(--space-12) 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+.auth__title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 300;
+  font-size: 36px;
+  line-height: 44px;
+  letter-spacing: -0.015em;
+}
+.auth__subtitle {
+  margin: -8px 0 var(--space-2);
+  font-size: 15px;
+}
+.auth__password {
+  position: relative;
+}
+.auth__password .input {
+  padding-right: 48px;
+}
+.auth__reveal {
+  position: absolute;
+  right: 6px;
+  top: 6px;
+  color: var(--ink-muted);
+}
+.auth__hint {
+  font-size: 13px;
+}
+.auth__error {
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  background: var(--danger-mist);
+  color: var(--danger);
+  font-weight: 500;
+}
+.auth__submit {
+  margin-top: var(--space-2);
+  height: 46px;
+}
+.auth__submit .loader img {
+  filter: brightness(10);
+}
+[data-theme='dark'] .auth__submit .loader img {
+  filter: brightness(0.2);
+}
+.auth__switch {
+  margin: 0;
+  text-align: center;
+  color: var(--ink-muted);
+}
+.auth__switch a {
+  font-weight: 600;
+  text-decoration: none;
+}
+.auth__switch a:hover {
+  text-decoration: underline;
+}
+.auth__local {
+  margin: var(--space-4) 0 0;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-glass);
+  font-size: 13px;
+  line-height: 20px;
+}
+
+@media (max-width: 860px) {
+  .auth {
+    grid-template-columns: 1fr;
+  }
+  .auth__art {
+    display: none;
+  }
+  .auth__main {
+    padding: var(--space-4);
+  }
+}

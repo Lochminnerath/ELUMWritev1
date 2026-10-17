@@ -1,0 +1,45 @@
+{
+  "name": "elum-write",
+  "private": true,
+  "version": "0.1.0",
+  "description": "ELUM Write: documents and writing, built by people.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@tiptap/core": "^3.32.0",
+    "@tiptap/extension-highlight": "^3.32.0",
+    "@tiptap/extension-list": "^3.32.0",
+    "@tiptap/extension-subscript": "^3.32.0",
+    "@tiptap/extension-superscript": "^3.32.0",
+    "@tiptap/extension-text-align": "^3.32.0",
+    "@tiptap/extension-text-style": "^3.32.0",
+    "@tiptap/extensions": "^3.32.0",
+    "@tiptap/pm": "^3.32.0",
+    "@tiptap/react": "^3.32.0",
+    "@tiptap/starter-kit": "^3.32.0",
+    "lucide-react": "^1.58.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "react-router": "^7.18.4"
+  },
+  "devDependencies": {
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^5.2.0",
+    "fake-indexeddb": "^6.2.6",
+    "jsdom": "^26.1.0",
+    "typescript": "~5.9",
+    "vite": "^7.3.7",
+    "vitest": "^3.2.7"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
