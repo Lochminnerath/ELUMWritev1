@@ -1,0 +1,4 @@
+confirmation: Confirm your email for ELUM Write
+recovery: Reset your ELUM Write password
+email_change: Confirm your new email for ELUM Write
+reauthentication: Your ELUM Write confirmation code

@@ -160,6 +160,69 @@
   color: var(--danger);
   font-weight: 500;
 }
+.account-type {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.account-type legend {
+  padding: 0;
+  margin-bottom: 6px;
+}
+.account-type__option {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1.5px solid var(--hairline);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+.account-type__option:has(input:checked) {
+  border-color: var(--write-line);
+  background: var(--write-mist);
+}
+.account-type__option[aria-disabled='true'] {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+.account-type__option input {
+  margin-top: 3px;
+  accent-color: var(--write-deep);
+}
+.account-type__option > span {
+  display: flex;
+  flex-direction: column;
+}
+.account-type__title {
+  font-weight: 600;
+}
+.account-type__hint {
+  font-size: 13px;
+  line-height: 18px;
+}
+.account-type__soon {
+  margin-left: 6px;
+  padding: 1px 8px;
+  border-radius: var(--radius-pill);
+  background: var(--elum-mist);
+  color: var(--elum-blue-deep);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.auth__notice {
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  background: var(--elum-mist);
+  color: var(--ink);
+  font-weight: 500;
+}
 .auth__submit {
   margin-top: var(--space-2);
   height: 46px;

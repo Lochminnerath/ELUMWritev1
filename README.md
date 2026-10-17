@@ -20,7 +20,10 @@ npm install
 npm run dev        # http://localhost:5173
 ```
 
-Create an account, or sign in as one of the demo people (local mode only):
+Without any settings it runs in preview mode, with data kept in the browser. To use
+Supabase, follow [supabase/README.md](supabase/README.md).
+
+Create an account, or sign in as one of the demo people (preview mode only):
 
 | Name | Email | Password |
 | --- | --- | --- |
@@ -39,10 +42,12 @@ commenter or editor experience.
 | `npm run preview` | Serve the production build |
 | `npm run typecheck` | TypeScript only |
 | `npm test` | Unit tests (Vitest) |
+| `sh supabase/tests/run.sh` | Database permission checks (needs `psql`) |
+| `sh supabase/tests/integration.sh` | The Supabase client against the real schema (needs `psql` and `postgrest`) |
 
 ## What Write does today
 
-**Accounts.** Sign up, sign in, sign out, edit your name. Pages behind sign-in
+**Accounts.** Sign up (with optional email confirmation on Supabase), sign in, sign out, edit your name. Pages behind sign-in
 redirect to it and bring you back afterwards. Signing out in one tab signs out
 every tab.
 
@@ -114,20 +119,26 @@ src/
   styles/              Brand tokens (from the ELUM brand kit) and base styles
 public/brand/          Logos, Write marks, document logo, loaders
 docs/API.md            The contract for the ELUM API
+docs/EMAIL.md          Email design, the list of emails, and how to install them
+supabase/              Database migrations, tests, edge functions and email templates
 ```
 
 The editor is [TipTap](https://tiptap.dev) on ProseMirror. Documents are
 stored as ProseMirror JSON; the schema is defined in `src/editor/extensions`.
 
-### Switching to the ELUM API
+### Backends
 
-Set `VITE_ELUM_API_URL` (see `.env.example`) and rebuild. `src/api/index.ts`
-picks `HttpApi` instead of `LocalApi`. The endpoints, payloads, errors and
-permission rules the server needs to implement are in [docs/API.md](docs/API.md),
-and `src/api/local/LocalApi.test.ts` shows each rule working.
+`src/api/index.ts` picks one at start-up:
 
-In local mode everything stays in the browser: records in `localStorage`
-(`elum.local.v1.*`), images in IndexedDB (`elum-write-assets`). Passwords are
+| Set in `.env.local` | Backend |
+| --- | --- |
+| `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` | **Supabase**: Auth, Postgres with row level security, Storage. Setup in [supabase/README.md](supabase/README.md). |
+| `VITE_ELUM_API_URL` | A custom ELUM API over HTTPS, following [docs/API.md](docs/API.md). |
+| neither | Preview mode: everything stays in this browser. |
+
+All three implement the same `ElumApi` interface and the same rules, so the UI
+never changes. In preview mode, records live in `localStorage`
+(`elum.local.v1.*`) and images in IndexedDB (`elum-write-assets`); passwords are
 stored only as salted PBKDF2 hashes even there. Clearing site data resets it.
 
 ### Fonts

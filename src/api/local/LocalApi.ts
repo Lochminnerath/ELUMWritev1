@@ -3,6 +3,7 @@ import { buildPreview, collectAssetIds, COMMENT_MARK, emptyDocument, LOCAL_ASSET
 import { ApiError } from '../errors';
 import { atLeast } from '../roles';
 import { tokenStore } from '../tokenStore';
+import { checkSignUp, cleanComment, cleanName, cleanTitle } from '../validation';
 import type {
   Asset,
   CommentThread,
@@ -10,6 +11,7 @@ import type {
   DocumentFilter,
   DocumentRecord,
   DocumentSummary,
+  Invite,
   NewComment,
   PublicUser,
   Role,
@@ -17,6 +19,7 @@ import type {
   SaveResult,
   Session,
   Share,
+  ShareByEmailResult,
   ShareRole,
   SignInInput,
   SignUpInput,
@@ -24,14 +27,11 @@ import type {
 } from '../types';
 import { welcomeDocument } from '../welcome';
 import { assetStore } from './assets';
-import { LocalDb, shareKey, type CommentRow, type DocumentRow, type UserRow } from './db';
+import { LocalDb, shareKey, type CommentRow, type DocumentRow, type InviteRow, type UserRow } from './db';
 import { DEFAULT_ITERATIONS, hashPassword, randomToken, verifyPassword } from './passwords';
 import { AVATAR_COLORS, seedDemoPeople } from './seed';
 
 const SESSION_DAYS = 30;
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const MAX_TITLE = 200;
-const MAX_COMMENT = 4000;
 
 export interface LocalApiOptions {
   storage?: Storage;
@@ -73,14 +73,8 @@ export class LocalApi implements ElumApi {
   }
 
   async signUp(input: SignUpInput): Promise<Session> {
-    const name = input.name.trim();
-    const email = input.email.trim();
+    const { name, email } = checkSignUp(input);
     const emailLower = email.toLowerCase();
-    if (!name) throw new ApiError('invalid', 'Enter your name.', { field: 'name' });
-    if (!EMAIL_RE.test(email)) throw new ApiError('invalid', 'Enter a valid email address.', { field: 'email' });
-    if (input.password.length < 8) {
-      throw new ApiError('invalid', 'Use at least 8 characters for your password.', { field: 'password' });
-    }
     const users = this.db.read('users');
     if (Object.values(users).some((u) => u.emailLower === emailLower)) {
       throw new ApiError('email_taken', 'An account with this email already exists. Sign in instead.', { field: 'email' });
@@ -99,6 +93,8 @@ export class LocalApi implements ElumApi {
     this.db.update('users', (rows) => void (rows[id] = user));
     this.db.update('credentials', (rows) => void (rows[id] = credential));
     this.insertDocument(id, 'Welcome to Write', welcomeDocument(name));
+    // Preview mode has no email verification, so invites apply straight away.
+    this.claimInvites(user);
     return this.startSession(user);
   }
 
@@ -123,8 +119,7 @@ export class LocalApi implements ElumApi {
 
   async updateProfile(input: { name: string }): Promise<User> {
     const me = this.requireUser();
-    const name = input.name.trim();
-    if (!name) throw new ApiError('invalid', 'Enter your name.', { field: 'name' });
+    const name = cleanName(input.name);
     const row = this.db.update('users', (rows) => {
       rows[me.id] = { ...rows[me.id], name };
       return rows[me.id];
@@ -225,6 +220,7 @@ export class LocalApi implements ElumApi {
     const forDoc = (key: string) => key.startsWith(`${id}:`);
     this.db.update('shares', (rows) => Object.keys(rows).filter(forDoc).forEach((k) => delete rows[k]));
     this.db.update('opens', (rows) => Object.keys(rows).filter(forDoc).forEach((k) => delete rows[k]));
+    this.db.update('invites', (rows) => Object.keys(rows).filter(forDoc).forEach((k) => delete rows[k]));
     this.db.update('comments', (rows) =>
       Object.values(rows)
         .filter((c) => c.docId === id)
@@ -280,6 +276,37 @@ export class LocalApi implements ElumApi {
     // Anyone can remove themselves; editors can remove others.
     this.access(docId, me.id, userId === me.id ? 'viewer' : 'editor');
     this.db.update('shares', (rows) => void delete rows[shareKey(docId, userId)]);
+  }
+
+  async shareByEmail(docId: string, email: string, role: ShareRole): Promise<ShareByEmailResult> {
+    const me = this.requireUser();
+    this.access(docId, me.id, 'editor');
+    const address = email.trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(address)) throw new ApiError('invalid', 'Enter a valid email address.');
+    if (!['viewer', 'commenter', 'editor'].includes(role)) throw new ApiError('invalid', 'Choose a role.');
+    const existing = Object.values(this.db.read('users')).find((u) => u.emailLower === address);
+    if (existing) return { kind: 'share', share: await this.setShare(docId, existing.id, role) };
+    const key = `${docId}:${address}`;
+    const row = this.db.update('invites', (rows) => {
+      rows[key] = { docId, email: address, role, invitedAt: rows[key]?.invitedAt ?? now(), invitedById: rows[key]?.invitedById ?? me.id };
+      return rows[key];
+    });
+    return { kind: 'invite', invite: this.invite(row) };
+  }
+
+  async listInvites(docId: string): Promise<Invite[]> {
+    const me = this.requireUser();
+    this.access(docId, me.id, 'viewer');
+    return Object.values(this.db.read('invites'))
+      .filter((i) => i.docId === docId)
+      .sort((a, b) => a.invitedAt.localeCompare(b.invitedAt))
+      .map((i) => this.invite(i));
+  }
+
+  async removeInvite(docId: string, email: string): Promise<void> {
+    const me = this.requireUser();
+    this.access(docId, me.id, 'editor');
+    this.db.update('invites', (rows) => void delete rows[`${docId}:${email.trim().toLowerCase()}`]);
   }
 
   // ---------------------------------------------------------------- comments
@@ -415,6 +442,29 @@ export class LocalApi implements ElumApi {
     return { token, user: toUser(user), expiresAt };
   }
 
+  private invite(row: InviteRow): Invite {
+    const users = this.db.read('users');
+    const by = row.invitedById ? users[row.invitedById] : undefined;
+    return { email: row.email, role: row.role, invitedAt: row.invitedAt, invitedBy: by ? toPublic(by) : null };
+  }
+
+  /** Turns invites for this person's address into access, keeping the higher role. */
+  private claimInvites(user: UserRow) {
+    const invites = Object.entries(this.db.read('invites')).filter(([, i]) => i.email === user.emailLower);
+    if (!invites.length) return;
+    const docs = this.db.read('documents');
+    this.db.update('shares', (rows) => {
+      for (const [, i] of invites) {
+        if (docs[i.docId]?.ownerId === user.id) continue;
+        const key = shareKey(i.docId, user.id);
+        const current = rows[key];
+        if (current && atLeast(current.role, i.role)) continue;
+        rows[key] = { docId: i.docId, userId: user.id, role: i.role, addedAt: i.invitedAt, addedById: i.invitedById };
+      }
+    });
+    this.db.update('invites', (rows) => invites.forEach(([key]) => delete rows[key]));
+  }
+
   private requireUser(): UserRow {
     const token = tokenStore.get();
     const session = token ? this.db.read('sessions')[token] : undefined;
@@ -523,7 +573,7 @@ function now() {
 }
 
 function toUser(row: UserRow): User {
-  return { id: row.id, name: row.name, email: row.email, color: row.color, createdAt: row.createdAt };
+  return { id: row.id, name: row.name, email: row.email, color: row.color, accountType: 'external', createdAt: row.createdAt };
 }
 
 function toPublic(row: Pick<UserRow, 'id' | 'name' | 'email' | 'color'>): PublicUser {
@@ -539,18 +589,6 @@ function readBytes(blob: Blob): Promise<ArrayBuffer> {
     reader.onerror = () => reject(reader.error);
     reader.readAsArrayBuffer(blob);
   });
-}
-
-function cleanTitle(title: string | undefined): string {
-  const t = (title ?? '').replace(/\s+/g, ' ').trim().slice(0, MAX_TITLE);
-  return t || 'Untitled document';
-}
-
-function cleanComment(body: string): string {
-  const text = body.trim();
-  if (!text) throw new ApiError('invalid', 'Write something first.');
-  if (text.length > MAX_COMMENT) throw new ApiError('invalid', 'Comments can be up to 4,000 characters.');
-  return text;
 }
 
 /** Name and email prefix matches first. */

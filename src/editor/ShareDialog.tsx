@@ -1,6 +1,6 @@
-import { Link2, Search, X } from 'lucide-react';
+import { Link2, Mail, Search, X } from 'lucide-react';
 import { useEffect, useId, useRef, useState } from 'react';
-import { api, errorMessage, type DocumentRecord, type PublicUser, type Share, type ShareRole } from '../api';
+import { api, errorMessage, type DocumentRecord, type Invite, type PublicUser, type Share, type ShareRole } from '../api';
 import { canShare, ROLE_LABEL, SHARE_ROLES } from '../api/roles';
 import { useUser } from '../auth/AuthProvider';
 import { Avatar } from '../components/Avatar';
@@ -8,6 +8,13 @@ import { DocIcon } from '../components/Brand';
 import { Dialog } from '../components/Dialog';
 import { Loader } from '../components/Loader';
 import { useToast } from '../components/Toast';
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+/** Someone to share with: a person found by search, or an email address typed in full. */
+type Recipient = { kind: 'user'; user: PublicUser } | { kind: 'email'; email: string };
+
+const recipientKey = (r: Recipient) => (r.kind === 'user' ? `u:${r.user.id}` : `e:${r.email}`);
 
 interface ShareDialogProps {
   open: boolean;
@@ -25,17 +32,26 @@ export function ShareDialog({ open, onClose, doc, title, onSharesChanged }: Shar
   );
 }
 
+function MailAvatar({ size }: { size: number }) {
+  return (
+    <span className="share__mail-avatar" style={{ width: size, height: size }} aria-hidden="true">
+      <Mail size={Math.round(size * 0.5)} strokeWidth={1.75} />
+    </span>
+  );
+}
+
 function ShareBody({ doc, onClose, onSharesChanged }: { doc: DocumentRecord; onClose: () => void; onSharesChanged?: (count: number) => void }) {
   const me = useUser();
   const toast = useToast();
   const manage = canShare(doc.role);
   const [shares, setShares] = useState<Share[] | null>(null);
+  const [invites, setInvites] = useState<Invite[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<PublicUser[]>([]);
   const [searching, setSearching] = useState(false);
   const [active, setActive] = useState(0);
-  const [picked, setPicked] = useState<PublicUser[]>([]);
+  const [picked, setPicked] = useState<Recipient[]>([]);
   const [role, setRole] = useState<ShareRole>('viewer');
   const [busy, setBusy] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -43,8 +59,9 @@ function ShareBody({ doc, onClose, onSharesChanged }: { doc: DocumentRecord; onC
 
   const reload = async () => {
     try {
-      const list = await api.listShares(doc.id);
+      const [list, pending] = await Promise.all([api.listShares(doc.id), api.listInvites(doc.id)]);
       setShares(list);
+      setInvites(pending);
       onSharesChanged?.(list.length);
     } catch (e) {
       setError(errorMessage(e));
@@ -83,26 +100,42 @@ function ShareBody({ doc, onClose, onSharesChanged }: { doc: DocumentRecord; onC
     };
   }, [query, doc.owner.id]);
 
+  const typedEmail = query.trim().toLowerCase();
+  // A full email address that is not an account in the results can be invited directly.
+  const canInviteTyped =
+    EMAIL_RE.test(typedEmail) && !searching && !results.some((u) => u.email.toLowerCase() === typedEmail) && typedEmail !== doc.owner.email.toLowerCase();
+  const options: Recipient[] = [
+    ...results.map((user) => ({ kind: 'user' as const, user })),
+    ...(canInviteTyped ? [{ kind: 'email' as const, email: typedEmail }] : []),
+  ];
+
   const hasAccess = (id: string) => id === doc.owner.id || !!shares?.some((s) => s.user.id === id);
 
-  const pick = (user: PublicUser) => {
-    if (!picked.some((p) => p.id === user.id)) setPicked((list) => [...list, user]);
+  const pick = (recipient: Recipient) => {
+    if (!picked.some((p) => recipientKey(p) === recipientKey(recipient))) setPicked((list) => [...list, recipient]);
     setQuery('');
     setResults([]);
     inputRef.current?.focus();
   };
 
+  const verb = (r: ShareRole) => (r === 'viewer' ? 'view' : r === 'commenter' ? 'comment on' : 'edit');
+
   const share = async () => {
     setBusy(true);
     setError(null);
     try {
-      await Promise.all(picked.map((u) => api.setShare(doc.id, u.id, role)));
-      toast(
-        picked.length === 1
-          ? `${picked[0].name} can now ${role === 'viewer' ? 'view' : role === 'commenter' ? 'comment on' : 'edit'} this document`
-          : `Shared with ${picked.length} people`,
-        { tone: 'success' },
+      const outcomes = await Promise.all(
+        picked.map((r) => (r.kind === 'user' ? api.setShare(doc.id, r.user.id, role).then(() => 'share' as const) : api.shareByEmail(doc.id, r.email, role).then((o) => o.kind))),
       );
+      const invited = outcomes.filter((o) => o === 'invite').length;
+      if (picked.length === 1 && invited === 1) {
+        toast(`Invited ${(picked[0] as { email: string }).email}. They can ${verb(role)} it once they sign up and confirm that address.`, { tone: 'success', duration: 7000 });
+      } else if (picked.length === 1) {
+        const r = picked[0];
+        toast(`${r.kind === 'user' ? r.user.name : r.email} can now ${verb(role)} this document`, { tone: 'success' });
+      } else {
+        toast(invited ? `Shared with ${picked.length} people, ${invited} by invite` : `Shared with ${picked.length} people`, { tone: 'success' });
+      }
       setPicked([]);
       await reload();
     } catch (e) {
@@ -117,6 +150,17 @@ function ShareBody({ doc, onClose, onSharesChanged }: { doc: DocumentRecord; onC
     try {
       if (next === 'remove') await api.removeShare(doc.id, userId);
       else await api.setShare(doc.id, userId, next);
+      await reload();
+    } catch (e) {
+      setError(errorMessage(e));
+    }
+  };
+
+  const changeInvite = async (email: string, next: ShareRole | 'remove') => {
+    setError(null);
+    try {
+      if (next === 'remove') await api.removeInvite(doc.id, email);
+      else await api.shareByEmail(doc.id, email, next);
       await reload();
     } catch (e) {
       setError(errorMessage(e));
@@ -141,11 +185,15 @@ function ShareBody({ doc, onClose, onSharesChanged }: { doc: DocumentRecord; onC
         <div className="share__add">
           <div className="share__search">
             <Search size={18} strokeWidth={1.75} aria-hidden="true" />
-            {picked.map((u) => (
-              <span key={u.id} className="share__chip">
-                <Avatar user={u} size={20} />
-                {u.name}
-                <button type="button" aria-label={`Remove ${u.name}`} onClick={() => setPicked((list) => list.filter((p) => p.id !== u.id))}>
+            {picked.map((r) => (
+              <span key={recipientKey(r)} className="share__chip">
+                {r.kind === 'user' ? <Avatar user={r.user} size={20} /> : <MailAvatar size={20} />}
+                {r.kind === 'user' ? r.user.name : r.email}
+                <button
+                  type="button"
+                  aria-label={`Remove ${r.kind === 'user' ? r.user.name : r.email}`}
+                  onClick={() => setPicked((list) => list.filter((p) => recipientKey(p) !== recipientKey(r)))}
+                >
                   <X size={14} strokeWidth={2} />
                 </button>
               </span>
@@ -155,23 +203,23 @@ function ShareBody({ doc, onClose, onSharesChanged }: { doc: DocumentRecord; onC
               data-autofocus
               value={query}
               placeholder={picked.length ? 'Add more people' : 'Add people by name or email'}
-              aria-label="Find people to share with"
+              aria-label="Find people to share with, or type an email address"
               role="combobox"
               aria-expanded={showList}
               aria-controls={listId}
               aria-autocomplete="list"
-              aria-activedescendant={showList && results[active] ? `${listId}-${active}` : undefined}
+              aria-activedescendant={showList && options[active] ? `${listId}-${active}` : undefined}
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === 'ArrowDown') {
                   e.preventDefault();
-                  setActive((i) => Math.min(results.length - 1, i + 1));
+                  setActive((i) => Math.min(options.length - 1, i + 1));
                 } else if (e.key === 'ArrowUp') {
                   e.preventDefault();
                   setActive((i) => Math.max(0, i - 1));
-                } else if (e.key === 'Enter' && results[active]) {
+                } else if (e.key === 'Enter' && options[active]) {
                   e.preventDefault();
-                  pick(results[active]);
+                  pick(options[active]);
                 } else if (e.key === 'Backspace' && !query && picked.length) {
                   setPicked((list) => list.slice(0, -1));
                 }
@@ -181,19 +229,19 @@ function ShareBody({ doc, onClose, onSharesChanged }: { doc: DocumentRecord; onC
 
           {showList && (
             <div className="share__results" id={listId} role="listbox" aria-label="People">
-              {searching && results.length === 0 ? (
+              {searching && options.length === 0 ? (
                 <div className="share__hint">
                   <Loader size={20} label="Searching" />
                 </div>
-              ) : results.length === 0 ? (
+              ) : options.length === 0 ? (
                 <div className="share__hint muted">
-                  No one matches “{query.trim()}”.
-                  {api.mode === 'local' && ' In preview mode you can find accounts made in this browser, and the demo people such as Ada or Jonah.'}
+                  No one matches “{query.trim()}”. Type their full email address to invite them.
+                  {api.mode === 'local' && ' In preview mode you can also find the demo people, such as Ada or Jonah.'}
                 </div>
               ) : (
-                results.map((u, i) => (
+                options.map((r, i) => (
                   <div
-                    key={u.id}
+                    key={recipientKey(r)}
                     id={`${listId}-${i}`}
                     role="option"
                     aria-selected={i === active}
@@ -201,14 +249,17 @@ function ShareBody({ doc, onClose, onSharesChanged }: { doc: DocumentRecord; onC
                     data-active={i === active}
                     onPointerEnter={() => setActive(i)}
                     onMouseDown={(e) => e.preventDefault()}
-                    onClick={() => pick(u)}
+                    onClick={() => pick(r)}
                   >
-                    <Avatar user={u} size={32} />
+                    {r.kind === 'user' ? <Avatar user={r.user} size={32} /> : <MailAvatar size={32} />}
                     <span className="share__who">
-                      <span className="share__name">{u.name}</span>
-                      <span className="share__email">{u.email}</span>
+                      <span className="share__name">{r.kind === 'user' ? r.user.name : `Invite ${r.email}`}</span>
+                      <span className="share__email">
+                        {r.kind === 'user' ? r.user.email : 'No account yet. They get access once they sign up and confirm this address.'}
+                      </span>
                     </span>
-                    {hasAccess(u.id) && <span className="share__badge">Has access</span>}
+                    {r.kind === 'user' && hasAccess(r.user.id) && <span className="share__badge">Has access</span>}
+                    {r.kind === 'email' && invites.some((inv) => inv.email === r.email) && <span className="share__badge">Invited</span>}
                   </div>
                 ))
               )}
@@ -285,6 +336,32 @@ function ShareBody({ doc, onClose, onSharesChanged }: { doc: DocumentRecord; onC
                 </select>
               ) : (
                 <span className="share__role muted">{ROLE_LABEL[s.role]}</span>
+              )}
+            </li>
+          ))}
+          {invites.map((inv) => (
+            <li key={inv.email} className="share__person">
+              <MailAvatar size={36} />
+              <span className="share__who">
+                <span className="share__name">{inv.email}</span>
+                <span className="share__email">Invited{inv.invitedBy ? ` by ${inv.invitedBy.name}` : ''}. Waiting for them to sign up.</span>
+              </span>
+              {manage ? (
+                <select
+                  className="select share__role-select"
+                  aria-label={`Role for ${inv.email}`}
+                  value={inv.role}
+                  onChange={(e) => void changeInvite(inv.email, e.target.value as ShareRole | 'remove')}
+                >
+                  {SHARE_ROLES.map((r) => (
+                    <option key={r.value} value={r.value}>
+                      {r.label}
+                    </option>
+                  ))}
+                  <option value="remove">Cancel invite</option>
+                </select>
+              ) : (
+                <span className="share__role muted">{ROLE_LABEL[inv.role]}</span>
               )}
             </li>
           ))}

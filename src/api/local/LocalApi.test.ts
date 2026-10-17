@@ -222,6 +222,31 @@ describe('documents and sharing', () => {
     expect(localStorage.getItem('elum.local.v1.shares')).toBe('{}');
   });
 
+  it('shares by email and invites addresses without an account', async () => {
+    const { api, doc } = await setup();
+    const direct = await api.shareByEmail(doc.id, ' ADA@example.com ', 'commenter');
+    expect(direct.kind).toBe('share');
+    const invited = await api.shareByEmail(doc.id, 'New.Person@Example.org', 'viewer');
+    expect(invited).toMatchObject({ kind: 'invite', invite: { email: 'new.person@example.org', role: 'viewer' } });
+    await api.shareByEmail(doc.id, 'new.person@example.org', 'editor');
+    expect((await api.listInvites(doc.id)).map((i) => [i.email, i.role])).toEqual([['new.person@example.org', 'editor']]);
+    await expectCode(api.shareByEmail(doc.id, 'not-an-email', 'viewer'), 'invalid');
+
+    // Signing up with the invited address turns the invite into access.
+    await api.signOut();
+    const newcomer = await api.signUp({ name: 'Nia New', email: 'new.person@example.org', password: 'password-2' });
+    const opened = await api.getDocument(doc.id);
+    expect(opened.role).toBe('editor');
+    expect(newcomer.user.accountType).toBe('external');
+    expect(await api.listInvites(doc.id)).toEqual([]);
+
+    await api.signOut();
+    await api.signIn({ email: 'owner@example.org', password: 'password-1' });
+    await api.shareByEmail(doc.id, 'later@example.org', 'viewer');
+    await api.removeInvite(doc.id, 'LATER@example.org');
+    expect(await api.listInvites(doc.id)).toEqual([]);
+  });
+
   it('stores uploaded images and checks their type', async () => {
     const { api, doc } = await setup();
     const png = new Blob([new Uint8Array([137, 80, 78, 71])], { type: 'image/png' });

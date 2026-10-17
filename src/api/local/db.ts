@@ -38,6 +38,14 @@ export interface ShareRow {
   addedById: string | null;
 }
 
+export interface InviteRow {
+  docId: string;
+  email: string;
+  role: ShareRole;
+  invitedAt: string;
+  invitedById: string | null;
+}
+
 export interface ReplyRow {
   id: string;
   authorId: string;
@@ -68,6 +76,8 @@ export interface Tables {
   /** Last time each person opened each document, keyed by `${docId}:${userId}`. */
   opens: Record<string, string>;
   comments: Record<string, CommentRow>;
+  /** Access for addresses with no account yet, keyed by `${docId}:${email}`. */
+  invites: Record<string, InviteRow>;
 }
 
 export type TableName = keyof Tables;

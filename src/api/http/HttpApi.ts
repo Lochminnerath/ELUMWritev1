@@ -8,12 +8,14 @@ import type {
   DocumentFilter,
   DocumentRecord,
   DocumentSummary,
+  Invite,
   NewComment,
   PublicUser,
   SaveDocumentInput,
   SaveResult,
   Session,
   Share,
+  ShareByEmailResult,
   ShareRole,
   SignInInput,
   SignUpInput,
@@ -141,6 +143,18 @@ export class HttpApi implements ElumApi {
 
   removeShare(docId: string, userId: string): Promise<void> {
     return this.request('DELETE', `/documents/${enc(docId)}/shares/${enc(userId)}`);
+  }
+
+  shareByEmail(docId: string, email: string, role: ShareRole): Promise<ShareByEmailResult> {
+    return this.request('POST', `/documents/${enc(docId)}/shares/by-email`, { email, role });
+  }
+
+  listInvites(docId: string): Promise<Invite[]> {
+    return this.request('GET', `/documents/${enc(docId)}/invites`);
+  }
+
+  removeInvite(docId: string, email: string): Promise<void> {
+    return this.request('DELETE', `/documents/${enc(docId)}/invites/${enc(email.trim().toLowerCase())}`);
   }
 
   // ---------------------------------------------------------------- comments

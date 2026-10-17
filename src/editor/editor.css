@@ -864,6 +864,15 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+.share__mail-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  border-radius: 50%;
+  background: var(--elum-mist);
+  color: var(--elum-blue-deep);
+}
 .share__badge {
   font-size: 12px;
   color: var(--ink-muted);

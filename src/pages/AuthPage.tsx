@@ -21,7 +21,7 @@ export function AuthPage({ mode }: { mode: Mode }) {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<{ message: string; field?: Field } | null>(null);
+  const [error, setError] = useState<{ message: string; field?: Field; notice?: boolean } | null>(null);
 
   const isSignUp = mode === 'signup';
   const switchHref = `${isSignUp ? '/signin' : '/signup'}${next !== '/' ? `?next=${encodeURIComponent(next)}` : ''}`;
@@ -31,12 +31,13 @@ export function AuthPage({ mode }: { mode: Mode }) {
     setBusy(true);
     setError(null);
     try {
-      if (isSignUp) await signUp({ name, email, password });
+      if (isSignUp) await signUp({ name, email, password, accountType: 'external' });
       else await signIn({ email, password });
       navigate(next, { replace: true });
     } catch (err) {
       const field = isApiError(err) ? (err.details?.field as Field | undefined) : undefined;
-      setError({ message: errorMessage(err), field });
+      // "Check your email" is the next step, not a mistake.
+      setError({ message: errorMessage(err), field, notice: isApiError(err, 'confirm_email') });
       setBusy(false);
     }
   };
@@ -70,6 +71,28 @@ export function AuthPage({ mode }: { mode: Mode }) {
           <p className="auth__subtitle muted">
             {isSignUp ? 'One account for Write and the rest of ELUM.' : 'Sign in to pick up where you left off.'}
           </p>
+
+          {isSignUp && (
+            <fieldset className="account-type">
+              <legend className="field-label">Account</legend>
+              <label className="account-type__option">
+                <input type="radio" name="account-type" value="external" checked readOnly />
+                <span>
+                  <span className="account-type__title">Use my own email</span>
+                  <span className="account-type__hint muted">Gmail, Outlook or any provider. Shares arrive there.</span>
+                </span>
+              </label>
+              <label className="account-type__option" aria-disabled="true">
+                <input type="radio" name="account-type" value="type" disabled />
+                <span>
+                  <span className="account-type__title">
+                    Get an ELUM Type address <span className="account-type__soon">Coming soon</span>
+                  </span>
+                  <span className="account-type__hint muted">A new inbox from ELUM, with Write built in.</span>
+                </span>
+              </label>
+            </fieldset>
+          )}
 
           {isSignUp && (
             <div className="field">
@@ -136,7 +159,7 @@ export function AuthPage({ mode }: { mode: Mode }) {
           </div>
 
           {error && (
-            <p className="auth__error" role="alert">
+            <p className={error.notice ? 'auth__notice' : 'auth__error'} role={error.notice ? 'status' : 'alert'}>
               {error.message}
             </p>
           )}

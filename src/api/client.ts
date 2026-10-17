@@ -5,12 +5,14 @@ import type {
   DocumentFilter,
   DocumentRecord,
   DocumentSummary,
+  Invite,
   NewComment,
   PublicUser,
   SaveDocumentInput,
   SaveResult,
   Session,
   Share,
+  ShareByEmailResult,
   ShareRole,
   SignInInput,
   SignUpInput,
@@ -60,6 +62,13 @@ export interface ElumApi {
   /** Adds a person or changes their role. */
   setShare(docId: string, userId: string, role: ShareRole): Promise<Share>;
   removeShare(docId: string, userId: string): Promise<void>;
+  /**
+   * Shares with an email address: directly if an account uses it, otherwise as an
+   * invite that turns into access once someone verifies that address. Sends an email.
+   */
+  shareByEmail(docId: string, email: string, role: ShareRole): Promise<ShareByEmailResult>;
+  listInvites(docId: string): Promise<Invite[]>;
+  removeInvite(docId: string, email: string): Promise<void>;
 
   // Comments (commenters, editors and the owner; viewers do not see comments)
   listComments(docId: string): Promise<CommentThread[]>;
