@@ -119,6 +119,8 @@ src/
   styles/              Brand tokens (from the ELUM brand kit) and base styles
 public/brand/          Logos, Write marks, document logo, loaders
 docs/API.md            The contract for the ELUM API
+docs/EMAIL.md          Email design, the list of emails, and how to install them
+supabase/              Database migrations, tests, edge functions and email templates
 ```
 
 The editor is [TipTap](https://tiptap.dev) on ProseMirror. Documents are

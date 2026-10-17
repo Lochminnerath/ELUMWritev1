@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="supported-color-schemes" content="light dark">
+<title>Confirm your new email for ELUM Write</title>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600&family=Sora:wght@400&display=swap" rel="stylesheet">
+<style>
+  @media (prefers-color-scheme: dark) {
+    .ground { background: #0e1220 !important; }
+    .card { background: #171c2e !important; border-color: #2a3149 !important; }
+    .card td, .muted { color: #a3aac0 !important; }
+    .card .ink, .card .title { color: #eef1fa !important; }
+    .card .eyebrow { color: #ffb27a !important; }
+    .card .link { color: #8fa9fa !important; }
+    .logo-dark { display: block !important; max-height: none !important; overflow: visible !important; }
+    .doc { background: #0e1220 !important; border-color: #2a3149 !important; }
+    .code { background: #1b2340 !important; color: #eef1fa !important; }
+    .button { background: #7093f8 !important; color: #0e1220 !important; }
+    .footer td { color: #a3aac0 !important; }
+    .logo-light { display: none !important; }
+  }
+  @media (max-width: 600px) { .card-pad { padding: 28px 22px !important; } }
+</style>
+</head>
+<body class="ground" style="margin:0;padding:0;background:#f4f5f8">
+<div style="display:none;max-height:0;overflow:hidden;opacity:0">Confirm the change to your sign-in email.&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="ground" style="background:#f4f5f8">
+<tr><td align="center" style="padding:32px 16px">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px">
+<tr><td style="padding:0 4px 20px">
+<img class="logo-light" src="{{ .SiteURL }}/brand/email/write-lockup.png" width="140" height="41" alt="ELUM Write" style="display:block;border:0">
+<!--[if !mso]><!--><img class="logo-dark" src="{{ .SiteURL }}/brand/email/write-lockup-reversed.png" width="140" height="41" alt="ELUM Write" style="display:none;max-height:0;overflow:hidden;border:0"><!--<![endif]-->
+</td></tr>
+<tr><td class="card card-pad" style="background:#ffffff;border:1px solid #e2e5ee;border-radius:16px;padding:36px 36px 32px">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+<tr><td class="eyebrow" style="padding:0 0 10px;font:600 12px/16px Manrope, 'Helvetica Neue', Helvetica, Arial, sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#a84d17">Account</td></tr>
+<tr><td class="title" style="padding:0;font:400 24px/32px Sora, 'Avenir Next', 'Helvetica Neue', Helvetica, Arial, sans-serif;letter-spacing:-.01em;color:#141a2e">Confirm your new email</td></tr>
+<tr><td style="padding:14px 0 0;font:400 16px/26px Manrope, 'Helvetica Neue', Helvetica, Arial, sans-serif;color:#5a6178">You asked to change your ELUM Write email from {{ .Email }} to {{ .NewEmail }}. Confirm it to finish.</td></tr>
+<tr><td style="padding:28px 0 0"><a href="{{ .ConfirmationURL }}" class="button" style="display:inline-block;padding:13px 26px;border-radius:999px;background:#3b5bd6;color:#ffffff;font:600 15px/20px Manrope, 'Helvetica Neue', Helvetica, Arial, sans-serif;text-decoration:none">Confirm the change</a></td></tr>
+<tr><td style="padding:16px 0 0;font:400 13px/20px Manrope, 'Helvetica Neue', Helvetica, Arial, sans-serif;color:#5a6178">If the button does not work, paste this link into your browser:<br><a href="{{ .ConfirmationURL }}" class="link" style="color:#3b5bd6;word-break:break-all">{{ .ConfirmationURL }}</a></td></tr>
+</table>
+</td></tr>
+<tr><td class="footer" style="padding:24px 4px 0">
+<table role="presentation" cellpadding="0" cellspacing="0"><tr>
+<td style="padding:0 10px 0 0;vertical-align:middle"><img src="{{ .SiteURL }}/brand/email/elum-mark.png" width="20" height="20" alt="ELUM" style="display:block;border:0"></td>
+<td style="font:600 12px/16px Manrope, 'Helvetica Neue', Helvetica, Arial, sans-serif;color:#5a6178;vertical-align:middle">Built by people. Runs without AI.</td>
+</tr></table>
+<div style="padding:10px 0 0;font:400 12px/18px Manrope, 'Helvetica Neue', Helvetica, Arial, sans-serif;color:#5a6178">You got this because an email change was requested on your account. If it was not you, sign in and change your password.</div>
+</td></tr>
+</table>
+</td></tr>
+</table>
+</body>
+</html>

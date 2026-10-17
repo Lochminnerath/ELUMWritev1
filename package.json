@@ -10,7 +10,9 @@
     "preview": "vite preview",
     "typecheck": "tsc",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "emails": "node --experimental-strip-types --no-warnings scripts/build-email-templates.ts",
+    "emails:preview": "node --experimental-strip-types --no-warnings scripts/build-email-templates.ts --preview email-previews"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.118.0",

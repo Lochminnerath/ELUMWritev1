@@ -11,6 +11,7 @@
 // Schedule it every minute with pg_cron; see supabase/README.md.
 
 import { createClient } from 'npm:@supabase/supabase-js@2';
+import { inviteEmail, shareEmail } from '../_shared/email.ts';
 
 const BATCH = 50;
 const MAX_ATTEMPTS = 5;
@@ -27,41 +28,24 @@ interface Row {
   recipient: { name: string; account_type: 'type' | 'external' } | null;
 }
 
-const ROLE_WORDS = { viewer: 'view', commenter: 'comment on', editor: 'edit' } as const;
-
-const escape = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
-
 function parseSender(value: string): { name: string; email: string } {
   const match = value.match(/^\s*(.*?)\s*<([^>]+)>\s*$/);
   return match ? { name: match[1] || 'ELUM Write', email: match[2] } : { name: 'ELUM Write', email: value.trim() };
 }
 
 function compose(row: Row, appUrl: string) {
-  const who = row.sender?.name ?? 'Someone';
-  const title = row.document?.title ?? 'a document';
-  const can = ROLE_WORDS[row.role];
-  const open = `${appUrl}/d/${row.doc_id}`;
-  const link = row.kind === 'invited' ? `${appUrl}/signup?next=${encodeURIComponent(`/d/${row.doc_id}`)}` : open;
-  const subject = `${who} shared “${title}” with you`;
-  const lines =
-    row.kind === 'invited'
-      ? [
-          `${who} invited you to ${can} “${title}” in ELUM Write.`,
-          `Create a free account with this email address (${row.to_email}) to open it. Once you confirm the address, the document is waiting for you.`,
-        ]
-      : [`${who} shared “${title}” with you. You can ${can} it in ELUM Write.`];
-  const button = row.kind === 'invited' ? 'Create your account' : 'Open the document';
-  const html = `<!doctype html><html><body style="margin:0;background:#f4f5f8;font-family:Manrope,Helvetica,Arial,sans-serif;color:#141a2e">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:32px 16px">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#ffffff;border-radius:16px;padding:32px">
-<tr><td style="font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#a84d17;font-weight:600">ELUM Write</td></tr>
-<tr><td style="padding-top:12px;font-size:22px;line-height:30px">${escape(subject)}</td></tr>
-${lines.map((l) => `<tr><td style="padding-top:12px;font-size:15px;line-height:24px;color:#5a6178">${escape(l)}</td></tr>`).join('')}
-<tr><td style="padding-top:24px"><a href="${escape(link)}" style="display:inline-block;background:#3b5bd6;color:#ffffff;text-decoration:none;font-weight:600;padding:12px 24px;border-radius:999px">${button}</a></td></tr>
-<tr><td style="padding-top:24px;font-size:12px;line-height:18px;color:#5a6178">You received this because ${escape(row.sender?.email ?? 'an ELUM Write user')} shared with ${escape(row.to_email)}. Built by people. Runs without AI.</td></tr>
-</table></td></tr></table></body></html>`;
-  const text = `${subject}\n\n${lines.join('\n\n')}\n\n${button}: ${link}\n`;
-  return { subject, html, text };
+  const details = {
+    senderName: row.sender?.name ?? 'Someone',
+    senderEmail: row.sender?.email ?? 'an ELUM Write user',
+    docTitle: row.document?.title ?? 'Untitled document',
+    role: row.role,
+    toEmail: row.to_email,
+    url:
+      row.kind === 'invited'
+        ? `${appUrl}/signup?next=${encodeURIComponent(`/d/${row.doc_id}`)}`
+        : `${appUrl}/d/${row.doc_id}`,
+  };
+  return row.kind === 'invited' ? inviteEmail(details, { assetBase: appUrl }) : shareEmail(details, { assetBase: appUrl });
 }
 
 Deno.serve(async (req) => {

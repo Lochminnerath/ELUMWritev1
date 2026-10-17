@@ -78,6 +78,9 @@ Until it is set up, the rows simply wait, so nothing is lost.
 
 People with a Type account are skipped: their shares will arrive in the Type inbox once it exists.
 
+The email design, the Supabase Auth templates (confirm sign-up, password reset and
+more) and how to install them are in [docs/EMAIL.md](../docs/EMAIL.md).
+
 ## Accounts and invites
 
 - Every account has a name and an `account_type`: `external` (their own email
