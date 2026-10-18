@@ -7,6 +7,28 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MAX_TITLE = 200;
 const MAX_COMMENT = 4000;
 export const MIN_PASSWORD = 8;
+const HANDLE_RE = /^[a-z0-9](?:[a-z0-9._-]{1,28}[a-z0-9])?$/;
+const RESERVED_HANDLES = new Set([
+  'admin', 'administrator', 'elum', 'support', 'help', 'security', 'abuse', 'postmaster', 'hostmaster', 'webmaster',
+  'noreply', 'no-reply', 'mailer-daemon', 'root', 'system', 'write', 'type', 'browse', 'make', 'store', 'billing',
+  'privacy', 'legal', 'team', 'hello',
+]);
+
+/** Why a Type address name cannot be used, or null when its format is fine (it may still be taken). Matches the database. */
+export function handleProblem(raw: string): string | null {
+  const handle = raw.trim().toLowerCase();
+  if (handle.length < 3) return 'Use at least 3 characters.';
+  if (handle.length > 30) return 'Use at most 30 characters.';
+  if (!/^[a-z0-9._-]+$/.test(handle)) return 'Use letters, numbers, dots, dashes or underscores.';
+  if (!HANDLE_RE.test(handle)) return 'Start and end with a letter or number.';
+  if (/[._-]{2}/.test(handle)) return 'Do not put two symbols in a row.';
+  if (RESERVED_HANDLES.has(handle)) return 'That name is not available.';
+  return null;
+}
+
+export function isEmail(value: string): boolean {
+  return EMAIL_RE.test(value.trim());
+}
 
 export function checkSignUp(input: SignUpInput): SignUpInput {
   const name = input.name.trim();

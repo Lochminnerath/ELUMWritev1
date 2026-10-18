@@ -51,6 +51,18 @@ export interface ElumApi {
   /** Trades a handoff token from ELUM Account for a session here. */
   completeHandoff?(tokenHash: string): Promise<Session>;
 
+  // Confirming an email. Only on the platform backend (Supabase), where accounts confirm by link.
+  /** Sends the confirmation link again. */
+  resendConfirmation?(email: string): Promise<void>;
+  /** Why the confirmation link that opened the app did not work, if it did not. Read once. */
+  takeLinkProblem?(): string | null;
+
+  // ELUM Type addresses. Only on the platform backend (Supabase), where type-signup creates them.
+  /** The domain Type addresses live on, such as type.elum.services. */
+  typeDomain?(): Promise<string>;
+  /** Whether a Type address name is free. */
+  handleAvailable?(handle: string): Promise<boolean>;
+
   // Notifications from every ELUM service. Only on the platform backend (Supabase); absent elsewhere.
   readonly notifications?: NotificationsApi;
 

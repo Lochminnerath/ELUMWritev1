@@ -74,6 +74,7 @@ export class LocalApi implements ElumApi {
   }
 
   async signUp(input: SignUpInput): Promise<Session> {
+    if (input.accountType === 'type') throw new ApiError('invalid', 'ELUM Type addresses need the ELUM platform. Use your own email for now.');
     const { name, email } = checkSignUp(input);
     const emailLower = email.toLowerCase();
     const users = this.db.read('users');

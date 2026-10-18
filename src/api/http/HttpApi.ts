@@ -65,6 +65,7 @@ export class HttpApi implements ElumApi {
   }
 
   async signUp(input: SignUpInput): Promise<Session> {
+    if (input.accountType === 'type') throw new ApiError('invalid', 'ELUM Type addresses need the ELUM platform. Use your own email for now.');
     const session = await this.request<Session>('POST', '/auth/signup', input, { quiet: true });
     tokenStore.set(session.token);
     return session;
