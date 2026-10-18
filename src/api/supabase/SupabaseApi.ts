@@ -2,7 +2,7 @@ import { createClient, type Session as AuthSession, type SupabaseClient } from '
 import { ACCEPTED_IMAGE_TYPES, MAX_ASSET_BYTES, type ElumApi, type NotificationsApi } from '../client';
 import { buildPreview, COMMENT_MARK, emptyDocument, stripMarks, SUPABASE_ASSET_PREFIX } from '../content';
 import { ApiError } from '../errors';
-import { cookieStorage } from './cookieStorage';
+import { cookieStorage, usableCookieDomain } from './cookieStorage';
 import { cleanPreferencesPatch, normalizePreferences, type Preferences } from '../preferences';
 import type {
   AppNotification,
@@ -159,7 +159,7 @@ export class SupabaseApi implements ElumApi {
   constructor(url: string, anonKey: string, client?: SupabaseClient) {
     // With VITE_ELUM_COOKIE_DOMAIN set (such as .elum.services), the session lives in cookies on
     // that domain, so one sign-in covers every ELUM service. Otherwise it stays in this site's storage.
-    const cookieDomain = import.meta.env.VITE_ELUM_COOKIE_DOMAIN?.trim();
+    const cookieDomain = typeof location === 'undefined' ? null : usableCookieDomain(import.meta.env.VITE_ELUM_COOKIE_DOMAIN, location.hostname);
     this.sb =
       client ??
       createClient(url, anonKey, {
