@@ -159,7 +159,7 @@ export class SupabaseApi implements ElumApi {
   constructor(url: string, anonKey: string, client?: SupabaseClient) {
     // With VITE_ELUM_COOKIE_DOMAIN set (such as .elum.services), the session lives in cookies on
     // that domain, so one sign-in covers every ELUM service. Otherwise it stays in this site's storage.
-    const cookieDomain = usableCookieDomain(import.meta.env.VITE_ELUM_COOKIE_DOMAIN, location.hostname);
+    const cookieDomain = typeof location === 'undefined' ? null : usableCookieDomain(import.meta.env.VITE_ELUM_COOKIE_DOMAIN, location.hostname);
     this.sb =
       client ??
       createClient(url, anonKey, {
