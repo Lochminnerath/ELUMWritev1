@@ -27,17 +27,29 @@ export function welcomeDocument(name: string): DocNode {
       {
         type: 'bulletList',
         content: [
-          li(t('Bold', bold), t(', '), t('italic', italic), t(', '), t('underline', underline), t(' and '), t('strikethrough', strike), t(' sit at the front of the toolbar.')),
-          li(t('Highlight a phrase', highlight), t(', change the '), t('colour of a word', apricotText), t(', or change its case with '), kbd('Shift+F3'), t('.')),
-          li(t('Pick a font and a size, then set line, paragraph and letter spacing from the toolbar.')),
+          li(t('Bold', bold), t(', '), t('italic', italic), t(', '), t('underline', underline), t(' and '), t('strikethrough', strike), t(' are in the formatting dock at the bottom of the page.')),
+          li(t('Highlight a phrase', highlight), t(', give a word '), t('its own shade', apricotText), t(', or change its case with '), kbd('Shift+F3'), t('.')),
+          li(t('Pick a font and a size, then set line, paragraph and letter spacing from the dock.')),
           li(t('Press '), kbd('Tab'), t(' to indent a line and '), kbd('Shift+Tab'), t(' to step back.')),
         ],
       },
       h(2, 'Put things on the page'),
       p(
-        t('Drop an image onto the page, paste one, or choose '),
-        t('Insert, Image', bold),
-        t('. Drag a corner to resize it, then choose how the text wraps around it.'),
+        t('Drop an image onto the page, paste one, or open '),
+        t('Insert', bold),
+        t(' on the left. Drag a corner to resize it, then choose how the text wraps around it.'),
+      ),
+      h(2, 'Spelling, everywhere'),
+      p(
+        t('Write checks your spelling itself, the same on every device. Right-click a word with a wavy line for suggestions, or open '),
+        t('Spelling', bold),
+        t(' on the left. Words you add to your dictionary are saved to your account.'),
+      ),
+      h(2, 'Papers and citations'),
+      p(
+        t('Writing for a class? Open '),
+        t('Styles and citations', bold),
+        t(' on the left to format the whole document in MLA, APA, Chicago, Harvard or IEEE, set up the first page, add your sources, cite them in the text and build the Works Cited list.'),
       ),
       h(2, 'Work together'),
       p(

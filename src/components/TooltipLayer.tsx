@@ -63,7 +63,13 @@ export function TooltipLayer() {
       return;
     }
     const tip = tipRef.current;
-    const { top, left } = placeFloating(target.getBoundingClientRect(), tip.offsetWidth, tip.offsetHeight, 'bottom-center', 6);
+    const rect = target.getBoundingClientRect();
+    if (target.getAttribute('data-tip-placement') === 'right') {
+      // Beside tools in a vertical column.
+      setPos({ top: rect.top + rect.height / 2 - tip.offsetHeight / 2, left: rect.right + 8 });
+      return;
+    }
+    const { top, left } = placeFloating(rect, tip.offsetWidth, tip.offsetHeight, 'bottom-center', 6);
     setPos({ top, left });
   }, [target, text]);
 

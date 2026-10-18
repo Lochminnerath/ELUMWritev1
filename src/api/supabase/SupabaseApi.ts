@@ -1,8 +1,11 @@
 import { createClient, type Session as AuthSession, type SupabaseClient } from '@supabase/supabase-js';
-import { ACCEPTED_IMAGE_TYPES, MAX_ASSET_BYTES, type ElumApi } from '../client';
+import { ACCEPTED_IMAGE_TYPES, MAX_ASSET_BYTES, type ElumApi, type NotificationsApi } from '../client';
 import { buildPreview, COMMENT_MARK, emptyDocument, stripMarks, SUPABASE_ASSET_PREFIX } from '../content';
 import { ApiError } from '../errors';
+import { cookieStorage } from './cookieStorage';
+import { cleanPreferencesPatch, normalizePreferences, type Preferences } from '../preferences';
 import type {
+  AppNotification,
   Asset,
   CommentThread,
   DocNode,
@@ -126,6 +129,7 @@ export function toApiError(error: RawError | null | undefined, fallback = 'Somet
   if (code === 'PT403') return new ApiError('forbidden', message);
   if (code === 'PT404') return new ApiError('not_found', message);
   if (code === 'PT400') return new ApiError('invalid', message);
+  if (code === 'PT429' || status === 429) return new ApiError('rate_limited', message || 'Too many requests. Wait a little and try again.');
   if (code === 'PT401' || code === 'PGRST301' || code === 'PGRST303' || status === 401) {
     return new ApiError('unauthorized', 'Your session has ended. Sign in again.');
   }
@@ -153,7 +157,19 @@ export class SupabaseApi implements ElumApi {
   private readonly signedUrls = new Map<string, { url: string; expires: number }>();
 
   constructor(url: string, anonKey: string, client?: SupabaseClient) {
-    this.sb = client ?? createClient(url, anonKey, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } });
+    // With VITE_ELUM_COOKIE_DOMAIN set (such as .elum.services), the session lives in cookies on
+    // that domain, so one sign-in covers every ELUM service. Otherwise it stays in this site's storage.
+    const cookieDomain = import.meta.env.VITE_ELUM_COOKIE_DOMAIN?.trim();
+    this.sb =
+      client ??
+      createClient(url, anonKey, {
+        auth: {
+          persistSession: true,
+          autoRefreshToken: true,
+          detectSessionInUrl: true,
+          ...(cookieDomain ? { storageKey: 'elum-auth', storage: cookieStorage({ domain: cookieDomain, secure: location.protocol === 'https:' }) } : {}),
+        },
+      });
     this.sb.auth.onAuthStateChange((event) => {
       // Covers expiry, revocation and signing out in another tab.
       if (event === 'SIGNED_OUT') {
@@ -161,6 +177,84 @@ export class SupabaseApi implements ElumApi {
         this.unauthorizedHandlers.forEach((h) => h());
       }
     });
+  }
+
+  /** Notifications from every ELUM service (see supabase/migrations/*_elum_platform.sql). */
+  readonly notifications: NotificationsApi = {
+    list: async ({ before, unreadOnly = false, limit = 30 } = {}) => {
+      await this.me();
+      const { data, error } = await this.sb.rpc('elum_notifications', { p_limit: limit, p_before: before ?? null, p_unread_only: unreadOnly });
+      if (error) throw toApiError(error);
+      return ((data ?? []) as NotificationRow[]).map(toNotification);
+    },
+    markRead: async (ids) => {
+      await this.me();
+      const { error } = await this.sb.rpc('elum_mark_notifications_read', { p_ids: ids ?? null });
+      if (error) throw toApiError(error);
+    },
+    subscribe: (onNew) => {
+      let channel: ReturnType<SupabaseClient['channel']> | null = null;
+      let stopped = false;
+      void this.sb.auth.getSession().then(({ data }) => {
+        const me = data.session?.user.id;
+        if (!me || stopped) return;
+        channel = this.sb
+          .channel(`elum-notifications-${me}`)
+          .on(
+            'postgres_changes',
+            { event: 'INSERT', schema: 'elum', table: 'notifications', filter: `account_id=eq.${me}` },
+            (change) => {
+              const row = change.new as Record<string, unknown>;
+              onNew(
+                toNotification({
+                  id: String(row.id),
+                  service_id: String(row.service_id),
+                  type: String(row.type),
+                  title: String(row.title),
+                  body: (row.body as string | null) ?? null,
+                  link: (row.link as string | null) ?? null,
+                  created_at: String(row.created_at),
+                  read_at: null,
+                  actor: null,
+                }),
+              );
+            },
+          )
+          .subscribe();
+      });
+      return () => {
+        stopped = true;
+        if (channel) void this.sb.removeChannel(channel);
+      };
+    },
+  };
+
+  // ------------------------------------------------- signing in across apps
+
+  async handoff(to: string, next: string): Promise<string> {
+    await this.me();
+    const { data, error } = await this.sb.functions.invoke<{ data?: { url: string } }>('account-handoff', { body: { to, next } });
+    if (error || !data?.data?.url) throw new ApiError('server', 'We could not sign you in there.');
+    return data.data.url;
+  }
+
+  async completeHandoff(tokenHash: string): Promise<Session> {
+    const { data, error } = await this.sb.auth.verifyOtp({ token_hash: tokenHash, type: 'email' });
+    if (error || !data.session) throw new ApiError('unauthorized', 'That sign-in link has expired or was already used. Sign in again.');
+    return this.sessionFor(data.session);
+  }
+
+  /** The profile picture from ELUM Account, when there is one (older databases have none). */
+  private async pictureUrl(id: string): Promise<string | null> {
+    try {
+      const { data } = await this.sb.rpc('elum_pictures', { p_ids: [id] });
+      const path = (data as { picture: string }[] | null)?.[0]?.picture;
+      if (!path) return null;
+      const signed = await this.sb.storage.from('avatars').createSignedUrl(path, 60 * 60);
+      return signed.data?.signedUrl ?? null;
+    } catch {
+      return null;
+    }
   }
 
   // ---------------------------------------------------------------- sessions
@@ -227,6 +321,21 @@ export class SupabaseApi implements ElumApi {
       await this.sb.from('profiles').update({ name: cleanName(input.name) }).eq('id', me).select(PROFILE).single<ProfileRow>(),
     );
     return toUser(row);
+  }
+
+  async getPreferences(): Promise<Preferences> {
+    const me = await this.me();
+    const { data, error } = await this.sb.from('user_preferences').select('preferences').eq('user_id', me).maybeSingle<{ preferences: unknown }>();
+    if (error) throw toApiError(error);
+    return normalizePreferences(data?.preferences);
+  }
+
+  async updatePreferences(patch: Partial<Preferences>): Promise<Preferences> {
+    await this.me();
+    // Merged on the server, so two devices changing different settings do not undo each other.
+    const { data, error } = await this.sb.rpc('update_preferences', { patch: cleanPreferencesPatch(patch) });
+    if (error) throw toApiError(error);
+    return normalizePreferences(data);
   }
 
   onUnauthorized(handler: () => void): () => void {
@@ -519,9 +628,11 @@ export class SupabaseApi implements ElumApi {
       await this.sb.from('profiles').select(PROFILE).eq('id', session.user.id).single<ProfileRow>(),
     );
     if (!profile.welcomed) await this.welcome(profile);
+    // Tell the platform this account uses Write. Optional: older databases lack the function.
+    void this.sb.rpc('elum_join_service', { p_service: 'write' }).then(() => undefined, () => undefined);
     return {
       token: session.access_token,
-      user: toUser(profile),
+      user: { ...toUser(profile), pictureUrl: await this.pictureUrl(profile.id) },
       expiresAt: new Date((session.expires_at ?? 0) * 1000).toISOString(),
     };
   }
@@ -586,6 +697,32 @@ export class SupabaseApi implements ElumApi {
     const content = await Promise.all(node.content.map((c) => this.copyImages(c, docId)));
     return content.every((c, i) => c === node.content![i]) ? node : { ...node, content };
   }
+}
+
+interface NotificationRow {
+  id: string;
+  service_id: string;
+  type: string;
+  title: string;
+  body: string | null;
+  link: string | null;
+  created_at: string;
+  read_at: string | null;
+  actor: { id: string; name: string; color: string } | null;
+}
+
+function toNotification(r: NotificationRow): AppNotification {
+  return {
+    id: r.id,
+    service: r.service_id as AppNotification['service'],
+    type: r.type,
+    title: r.title,
+    body: r.body,
+    link: r.link,
+    createdAt: r.created_at,
+    readAt: r.read_at,
+    actor: r.actor,
+  };
 }
 
 function toUser(p: ProfileRow): User {

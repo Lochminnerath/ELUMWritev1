@@ -2,6 +2,8 @@ import type { Editor } from '@tiptap/core';
 import { DOMSerializer, Node as PMNode } from '@tiptap/pm/model';
 import type { DocNode, ElumApi } from '../api';
 import { COMMENT_MARK, isAssetRef, stripMarks } from '../api/content';
+import { docSettings } from './academic/AcademicDocument';
+import { academicCss, findStyle } from './academic/styles';
 import { findFont } from './fonts';
 
 function fileName(title: string, ext: string) {
@@ -73,6 +75,10 @@ img[data-wrap="break"] { display: block; margin: 8px 0; }
 img[data-wrap="break"][data-align="center"] { margin-left: auto; margin-right: auto; }
 img[data-wrap="break"][data-align="right"] { margin-left: auto; }
 a { color: #3b5bd6; }
+.page-break { break-after: page; height: 0; }
+p[data-text-indent="first"] { text-indent: 0.5in; }
+p[data-text-indent="hanging"] { padding-left: 0.5in; text-indent: -0.5in; }
+@page { margin: 0.75in; }
 @media print { body { background: #fff; } article { margin: 0; padding: 0; max-width: none; } }
 `;
 
@@ -80,8 +86,8 @@ function escapeHtml(s: string) {
   return s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
 }
 
-/** A standalone web page of the document, with images embedded. */
-export async function downloadHtml(editor: Editor, title: string, api: ElumApi) {
+/** The document as a standalone web page, with images embedded. */
+async function standaloneHtml(editor: Editor, title: string, api: ElumApi): Promise<string> {
   const json = await embedLocalImages(stripMarks(editor.getJSON() as DocNode, COMMENT_MARK), api);
   const fragment = DOMSerializer.fromSchema(editor.schema).serializeFragment(PMNode.fromJSON(editor.schema, json).content);
   const container = document.createElement('div');
@@ -94,6 +100,27 @@ export async function downloadHtml(editor: Editor, title: string, api: ElumApi) 
   });
   const fontLink = `https://fonts.googleapis.com/css2?${[...new Set(families)].map((f) => `family=${f.replace(/ /g, '+')}`).join('&')}&display=swap`;
 
+  // Academic styles: their look, and a running header with page numbers when printed.
+  const settings = docSettings(editor.state.doc.attrs);
+  const style = findStyle(settings.docStyle);
+  // Quoted for CSS; `<` is escaped too, so header text can never close the <style> element.
+  const cssString = (s: string) => `"${s.replace(/["\\]/g, '\\$&').replace(/</g, '\\3C ').replace(/[\r\n]+/g, ' ')}"`;
+  const header = settings.header?.trim() ?? '';
+  const headerContent = settings.pageNumbers
+    ? header
+      ? `${cssString(`${header} `)} counter(page)`
+      : 'counter(page)'
+    : header
+      ? cssString(header)
+      : '';
+  const academic = style
+    ? `${academicCss((id) => `article[data-doc-style="${id}"]`)}
+@page { margin: ${style.id === 'ieee' ? '0.75in' : '1in'}; }`
+    : '';
+  const pageHeader = headerContent
+    ? `@page { @top-right { content: ${headerContent}; font: 12pt "Times New Roman", Times, serif; vertical-align: bottom; padding-bottom: 0.25in; } }`
+    : '';
+
   const html = `<!doctype html>
 <html lang="en">
 <head>
@@ -101,14 +128,70 @@ export async function downloadHtml(editor: Editor, title: string, api: ElumApi) 
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${escapeHtml(title)}</title>
 <link rel="stylesheet" href="${fontLink}">
-<style>${EXPORT_CSS}</style>
+<style>${EXPORT_CSS}${academic}
+${pageHeader}</style>
 </head>
 <body>
-<article>${container.innerHTML}</article>
+<article${style ? ` data-doc-style="${style.id}"` : ''}>${container.innerHTML}</article>
 </body>
 </html>
 `;
+  return html;
+}
+
+export async function downloadHtml(editor: Editor, title: string, api: ElumApi) {
+  const html = await standaloneHtml(editor, title, api);
   saveFile(new Blob([html], { type: 'text/html;charset=utf-8' }), fileName(title, 'html'));
+}
+
+let printing = false;
+
+/**
+ * Prints the document (or saves it as PDF from the print dialog). It prints a clean copy in a
+ * hidden frame rather than the live editor: printing the editor page itself (zoomed page,
+ * glass panels, popovers, observers re-running as the layout changes) can stall or crash the
+ * browser, and the copy also prints without any of Write's controls.
+ */
+export async function printDocument(editor: Editor, title: string, api: ElumApi): Promise<void> {
+  if (printing) return;
+  printing = true;
+  const frame = document.createElement('iframe');
+  frame.setAttribute('aria-hidden', 'true');
+  frame.tabIndex = -1;
+  frame.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden';
+  const cleanup = () => frame.remove();
+  try {
+    const html = await standaloneHtml(editor, title, api);
+    await new Promise<void>((resolve) => {
+      frame.onload = () => resolve();
+      frame.srcdoc = html;
+      document.body.appendChild(frame);
+    });
+    const win = frame.contentWindow;
+    const doc = frame.contentDocument;
+    if (!win || !doc) throw new Error('The print copy did not load.');
+    // Wait for fonts and images (with a ceiling), so the printout matches the page.
+    const images = Array.from(doc.images)
+      .filter((img) => !img.complete)
+      .map((img) => new Promise((done) => (img.onload = img.onerror = done)));
+    await Promise.race([Promise.all([doc.fonts.ready, ...images]), new Promise((done) => setTimeout(done, 4000))]);
+    // Let the menu that started this close first.
+    await new Promise((done) => setTimeout(done, 50));
+    // print() blocks until the dialog closes in most browsers; others return at once and fire afterprint later.
+    win.addEventListener('afterprint', () => setTimeout(cleanup, 100), { once: true });
+    setTimeout(cleanup, 120_000);
+    const returnTo = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    win.focus();
+    win.print();
+    // Give focus back to the page, so typing and shortcuts work once the dialog closes.
+    if (returnTo?.isConnected && returnTo !== document.body) returnTo.focus({ preventScroll: true });
+    else editor.view.focus();
+  } catch (e) {
+    cleanup();
+    throw e;
+  } finally {
+    printing = false;
+  }
 }
 
 export function downloadText(editor: Editor, title: string) {

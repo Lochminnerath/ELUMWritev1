@@ -1,6 +1,7 @@
 import { ACCEPTED_IMAGE_TYPES, MAX_ASSET_BYTES, type ElumApi } from '../client';
 import { buildPreview, collectAssetIds, COMMENT_MARK, emptyDocument, LOCAL_ASSET_PREFIX, sameIgnoringComments, stripMarks } from '../content';
 import { ApiError } from '../errors';
+import { mergePreferences, normalizePreferences, type Preferences } from '../preferences';
 import { atLeast } from '../roles';
 import { tokenStore } from '../tokenStore';
 import { checkSignUp, cleanComment, cleanName, cleanTitle } from '../validation';
@@ -125,6 +126,20 @@ export class LocalApi implements ElumApi {
       return rows[me.id];
     });
     return toUser(row);
+  }
+
+  async getPreferences(): Promise<Preferences> {
+    const me = this.requireUser();
+    return normalizePreferences(this.db.read('preferences')[me.id]);
+  }
+
+  async updatePreferences(patch: Partial<Preferences>): Promise<Preferences> {
+    const me = this.requireUser();
+    return this.db.update('preferences', (rows) => {
+      const next = mergePreferences(normalizePreferences(rows[me.id]), patch);
+      rows[me.id] = next;
+      return next;
+    });
   }
 
   onUnauthorized(handler: () => void): () => void {

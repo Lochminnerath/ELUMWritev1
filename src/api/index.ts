@@ -18,5 +18,6 @@ export const api: ElumApi =
   supabaseUrl && supabaseKey ? new SupabaseApi(supabaseUrl, supabaseKey) : baseUrl ? new HttpApi(baseUrl) : new LocalApi();
 
 export * from './types';
+export * from './preferences';
 export type { ElumApi } from './client';
 export { ApiError, errorMessage, isApiError } from './errors';

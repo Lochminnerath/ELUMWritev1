@@ -8,7 +8,9 @@ import { FullPageLoader } from './components/Loader';
 import { ToastProvider } from './components/Toast';
 import { TooltipLayer } from './components/TooltipLayer';
 import { AuthPage } from './pages/AuthPage';
+import { HandoffPage } from './pages/HandoffPage';
 import { HomePage } from './pages/HomePage';
+import { PreferencesProvider } from './preferences/PreferencesProvider';
 import { ThemeProvider } from './theme/ThemeProvider';
 
 // The editor is the heaviest part of the app, so it loads on demand.
@@ -19,6 +21,7 @@ export function App() {
     <ThemeProvider>
       <ToastProvider>
         <AuthProvider>
+          <PreferencesProvider>
           <BrowserRouter>
             <ErrorBoundary>
               <Routes>
@@ -38,6 +41,7 @@ export function App() {
                   </RedirectIfSignedIn>
                 }
               />
+              <Route path="/auth/handoff" element={<HandoffPage />} />
               <Route
                 path="/"
                 element={
@@ -61,6 +65,7 @@ export function App() {
             </ErrorBoundary>
           </BrowserRouter>
           <TooltipLayer />
+          </PreferencesProvider>
         </AuthProvider>
       </ToastProvider>
     </ThemeProvider>

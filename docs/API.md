@@ -9,7 +9,7 @@ through `src/api/http/HttpApi.ts`. Until the API is live, `src/api/local/LocalAp
 implements the same rules inside the browser, and `src/api/local/LocalApi.test.ts`
 is the executable version of this document.
 
-Set `VITE_ELUM_API_URL` (for example `https://api.elum.example/v1`) and the app
+Set `VITE_ELUM_API_URL` (for example `https://api.elum.services/v1`) and the app
 switches to the HTTP client. Nothing else changes.
 
 ## Conventions
@@ -83,11 +83,23 @@ interface Asset { id: string; url: string; mimeType: string; size: number }
 | POST | `/auth/signout` | | 204, revokes the token |
 | GET | `/auth/session` | | `Session` for the current token, or 401 |
 | PATCH | `/me` | `{ name }` | `User` |
+| GET | `/me/preferences` | | `Preferences` |
+| PATCH | `/me/preferences` | any of `{ colors, dictionary, spellcheck, spellLanguage }` | `Preferences`, all of them |
 
 - Emails are unique and compared case-insensitively. Names are required. Passwords are at least 8 characters.
 - Hash passwords on the server (argon2id or bcrypt). Rate-limit sign-in by email and by IP.
 - Sessions last 30 days in the local API. Any lifetime works; the app handles 401 at any time.
 - New accounts should get a "Welcome to Write" document (`src/api/welcome.ts` has the content).
+- Preferences follow the person to every device and only they can read them. A PATCH replaces
+  the keys it sends and keeps the rest. Shapes and limits are in `src/api/preferences.ts`:
+  up to 14 custom colours (`#rrggbb`), up to 5,000 dictionary words, `spellLanguage` is
+  `en-US` or `en-GB`.
+
+## Notifications
+
+On Supabase, notifications come from the shared ELUM platform (`public.elum_notifications`,
+`public.elum_mark_notifications_read` and Realtime). See docs/ELUM-PLATFORM.md. A custom ELUM API
+may leave `notifications` out, and the bell then stays hidden.
 
 ## People
 

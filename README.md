@@ -57,10 +57,20 @@ remove a shared document from your list. Start blank or from a template
 (meeting notes, letter, project brief). Every document has its own logo:
 `public/brand/write/elum-write-doc.svg` (and `-reversed` for dark grounds).
 
+**The editor.** Write has its own layout rather than a menu bar and a ribbon:
+- The bar holds the Write mark, the document's own logo and title, a document menu
+  (new, copy, rename, download, print, delete), comments and **Share**.
+- A tool rail on the left opens **Outline** (jump between headings), **Insert**,
+  **Spelling** and **Page and view** (zoom, page colour, counts).
+- Formatting sits in a floating **dock** at the bottom of the page.
+- The status beside the title shows the Write loader while saving, then where the
+  document lives: "Saved to your account" (Supabase or the ELUM API) or "Saved in this
+  browser only" (preview mode).
+
 **Writing and formatting.**
-- Type, delete, undo and redo. Changes save as you go, with a status beside the title.
+- Type, delete, undo and redo. Changes save as you go.
 - Bold, italic, underline, strikethrough, superscript, subscript, inline code.
-- Text colour and highlight from brand-tuned swatches, or any custom colour.
+- Text colour and highlight from brand-tuned swatches, or any colour from Write's own picker. Colours you make are saved to your account and appear on every device.
 - Change case: Sentence case, lowercase, UPPERCASE, Title Case, and Shift+F3 to cycle. Formatting is kept.
 - Fonts from a catalogue built for growth (see "Fonts" below), with search and live previews.
 - Font size in points, typed or picked, with bigger and smaller buttons.
@@ -72,7 +82,29 @@ remove a shared document from your list. Start blank or from a template
 - Bulleted, numbered and checklists; quotes; horizontal lines; links (Ctrl/Cmd+K).
 - Clear formatting, word count, keyboard shortcut sheet (Ctrl/Cmd+/).
 - Zoom from 50% to 200%. Page colour can follow light or dark mode, or always be white paper.
-- Download as a web page (images embedded) or plain text; print or save as PDF.
+- Download as PDF, a web page (images embedded) or plain text; print. Printing uses a clean copy of the document in a hidden frame, never the editor page itself.
+
+**Academic formats.** The Styles and citations panel sets a document to MLA (9th),
+APA (7th, student), Chicago (17th, author-date), Harvard or IEEE:
+
+- **The look:** Times New Roman, the style's spacing and first-line indents, and headings.
+- **The header:** your surname and page number (MLA), or page numbers, printed in the top right.
+- **The first page:** a heading block or title page from a short form.
+- **Sources:** add books, journal articles and web pages. Write formats each entry in the chosen style, cites it in the text ("(Kimmerer 42)", "(Lopez & Okafor, 2021, p. 45)", "[1]"), and builds the Works Cited or References list (sorted, with hanging indents) on a new page.
+- **Switching styles** reformats everything.
+
+There are also page breaks, and first-line and hanging indents for any paragraph.
+
+**Notifications.** On Supabase, a bell lists shares, comments and replies from every ELUM
+service, live.
+
+**Spelling.** Write checks spelling itself, so it is the same on every device and
+browser: Hunspell dictionaries for English (US) and English (UK) run in a background
+worker ([nspell](https://github.com/wooorm/nspell)). Misspelled words get a wavy line;
+right-click one for suggestions, add it to your dictionary or ignore it, or work
+through them all in the Spelling panel. The dictionary, the language and the on/off
+switch are saved to your account. Code, links, web and email addresses, ACRONYMS and
+mixedCase names are skipped.
 
 **Images.** Insert from your computer, drag them onto the page, or paste them.
 Select an image to resize it from any corner, set it to 25%, 50% or 100% of
@@ -95,6 +127,14 @@ sun button, or choose in the account menu. The choice is remembered.
 **Mobile.** Pages reflow to the screen width, the toolbar scrolls, and the
 comments panel becomes a drawer.
 
+**ELUM Account.** With `VITE_ELUM_ACCOUNT_URL` set (for example
+https://elumaccounts.netlify.app), signing in goes through ELUM Account, and
+the account menu opens it for your profile, picture, privacy and people.
+Every document has its own link (`/d/<id>`). Open one while signed out and
+ELUM Account brings you straight back to it, signed in; Write then opens it
+if you have access. How sign-in crosses sites is explained in ELUMAccountsV1
+`docs/SIGN-IN.md`.
+
 ## How it is built
 
 ```
@@ -107,19 +147,24 @@ src/
     content.ts         Document helpers shared by both (previews, comment rules)
     roles.ts           Viewer < commenter < editor < owner
   auth/                Session state, sign-in redirects
+  preferences/         Settings saved with the account (colours, dictionary)
   theme/               Light, dark and match-system
   components/          Menus, popovers, dialogs, toasts, tooltips, avatars, logos
   pages/               Sign in and sign up, documents home
   editor/              The document editor (loaded only when a document opens)
     extensions/        TipTap extensions: paragraph format, letter spacing, case,
                        Tab keys, comments, images, permissions
-    toolbar/           Toolbar controls: fonts, sizes, colours, links
+    toolbar/           The formatting dock: fonts, sizes, colours (own picker), links
+    spelling/          Spell check: worker, word finder, suggestions, menu
+    academic/          MLA, APA, Chicago, Harvard, IEEE: styles, citations, sources
+    SidePanels.tsx     The tool rail and its panels
     fonts.ts           The font catalogue
-    DocWorkspace.tsx   Header, menus, toolbar, page, comments, autosave
+    DocWorkspace.tsx   Bar, rail, page, dock, comments, autosave
   styles/              Brand tokens (from the ELUM brand kit) and base styles
 public/brand/          Logos, Write marks, document logo, loaders
 docs/API.md            The contract for the ELUM API
 docs/EMAIL.md          Email design, the list of emails, and how to install them
+docs/ELUM-PLATFORM.md  The shared platform for every ELUM service, and the ELUM Type handoff
 supabase/              Database migrations, tests, edge functions and email templates
 ```
 

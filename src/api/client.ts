@@ -17,7 +17,9 @@ import type {
   SignInInput,
   SignUpInput,
   User,
+  AppNotification,
 } from './types';
+import type { Preferences } from './preferences';
 
 /**
  * Everything ELUM Write asks of its backend. `LocalApi` implements it inside
@@ -36,8 +38,21 @@ export interface ElumApi {
   signIn(input: SignInInput): Promise<Session>;
   signOut(): Promise<void>;
   updateProfile(input: { name: string }): Promise<User>;
+  /** Settings saved with the account (custom colours, spelling dictionary), so they follow the person. */
+  getPreferences(): Promise<Preferences>;
+  /** Changes some settings and returns all of them. */
+  updatePreferences(patch: Partial<Preferences>): Promise<Preferences>;
   /** Called when the server rejects the session (expired or revoked). Returns an unsubscribe function. */
   onUnauthorized(handler: () => void): () => void;
+
+  // Signing in across ELUM apps through ELUM Account. Only on the platform backend (Supabase).
+  /** A one-time sign-in for another ELUM app (account-handoff): where to send the browser. */
+  handoff?(to: string, next: string): Promise<string>;
+  /** Trades a handoff token from ELUM Account for a session here. */
+  completeHandoff?(tokenHash: string): Promise<Session>;
+
+  // Notifications from every ELUM service. Only on the platform backend (Supabase); absent elsewhere.
+  readonly notifications?: NotificationsApi;
 
   // People
   /** Finds people to share with by name or email. Excludes the signed-in person. */
@@ -83,6 +98,14 @@ export interface ElumApi {
   resolveAssetUrl(src: string): Promise<string>;
   /** The raw bytes behind an image `src`, used for downloads and exports. */
   fetchAsset(src: string): Promise<Blob>;
+}
+
+export interface NotificationsApi {
+  list(options?: { before?: string; unreadOnly?: boolean; limit?: number }): Promise<AppNotification[]>;
+  /** Marks these as read, or all of them. */
+  markRead(ids?: string[]): Promise<void>;
+  /** Calls back when a new notification arrives. Returns an unsubscribe function. */
+  subscribe(onNew: (n: AppNotification) => void): () => void;
 }
 
 export const ACCEPTED_IMAGE_TYPES = [

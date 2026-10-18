@@ -139,8 +139,7 @@
   flex-direction: column;
   gap: 10px;
 }
-.color-picker__reset,
-.color-picker__custom {
+.color-picker__reset {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -152,8 +151,7 @@
   color: var(--ink);
   cursor: pointer;
 }
-.color-picker__reset:hover,
-.color-picker__custom:hover {
+.color-picker__reset:hover {
   background: var(--elum-mist);
 }
 .color-picker__auto {
@@ -191,15 +189,118 @@
 .swatch svg {
   filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.6));
 }
-.color-picker__custom input[type='color'] {
-  margin-left: auto;
-  width: 28px;
-  height: 22px;
-  padding: 0;
-  border: 1px solid var(--hairline);
-  border-radius: 6px;
-  background: none;
+.color-picker {
+  width: 252px;
+}
+.color-picker__section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 8px;
+  border-top: 1px solid var(--hairline);
+}
+.color-picker__heading {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-muted);
+}
+.color-picker__hint {
+  margin: 0;
+  font-size: 12px;
+  line-height: 16px;
+}
+.swatch--add {
+  background: var(--surface) !important;
+  color: var(--ink-muted);
+  box-shadow: inset 0 0 0 1.5px var(--hairline);
+}
+.swatch--add[aria-expanded='true'] {
+  color: var(--write-deep);
+  box-shadow: inset 0 0 0 1.5px var(--write);
+}
+.color-picker__custom {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.color-picker__custom-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+/* In-app colour field: area, hue, hex. */
+.color-field {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.color-field__area {
+  position: relative;
+  height: 132px;
+  border-radius: var(--radius-sm);
+  cursor: crosshair;
+  touch-action: none;
+  box-shadow: inset 0 0 0 1px rgba(20, 26, 46, 0.12);
+}
+.color-field__hue {
+  position: relative;
+  height: 14px;
+  border-radius: var(--radius-pill);
+  background: linear-gradient(to right, #f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00);
   cursor: pointer;
+  touch-action: none;
+}
+.color-field__area:focus-visible,
+.color-field__hue:focus-visible {
+  outline: 2px solid var(--action);
+  outline-offset: 2px;
+}
+.color-field__thumb {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  translate: -50% -50%;
+  border: 2.5px solid #fff;
+  box-shadow: 0 0 0 1px rgba(20, 26, 46, 0.35), 0 1px 4px rgba(20, 26, 46, 0.3);
+  pointer-events: none;
+}
+.color-field__thumb--hue {
+  top: 50%;
+}
+.color-field__hex {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 10px 0 6px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  font-family: var(--font-mono);
+  font-size: 13px;
+}
+.color-field__hex:focus-within {
+  border-color: var(--action);
+}
+.color-field__hex input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  text-transform: lowercase;
+}
+.color-field__hex input:focus {
+  outline: none;
+}
+.color-field__preview {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  box-shadow: inset 0 0 0 1px rgba(20, 26, 46, 0.15);
 }
 
 /* Font picker */

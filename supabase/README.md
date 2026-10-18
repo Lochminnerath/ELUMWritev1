@@ -16,7 +16,9 @@ Never put the **service role key** in the app or in `.env`.
 
 1. **Create the schema.** Open the project's SQL editor and run each file in
    `migrations/` in order (`20261017000000_elum_write.sql`, then
-   `20261018000000_accounts_and_invites.sql`). Or, with the Supabase CLI:
+   `20261018000000_accounts_and_invites.sql`, then `20261019000000_preferences.sql`, then
+   `20261020000000_elum_platform.sql`).
+   Or, with the Supabase CLI:
 
    ```sh
    supabase link --project-ref <your-project-ref>
@@ -45,7 +47,8 @@ Never put the **service role key** in the app or in `.env`.
    VITE_SUPABASE_ANON_KEY=<anon / publishable key>
    ```
 
-   Set the same two variables in your hosting provider for production builds.
+   Set the same two variables in your hosting provider for production builds
+   (on Netlify: Site configuration, Environment variables; `netlify.toml` covers the rest).
    With them set, `npm run dev` and `npm run build` use Supabase; without them,
    Write falls back to its in-browser preview mode.
 
@@ -89,6 +92,33 @@ more) and how to install them are in [docs/EMAIL.md](../docs/EMAIL.md).
   waits in `document_invites`. It becomes access only when someone **verifies**
   that address (by confirming at sign-up, or confirming a changed email), so an
   unverified sign-up cannot claim another person's invite.
+
+## The ELUM platform
+
+`20261020000000_elum_platform.sql` adds what every ELUM service shares:
+
+- the `elum` schema: addresses, services, events and their deliveries, notifications, rate limits and an audit log;
+- the `public.elum_*` functions apps call.
+
+Write uses it in four ways:
+
+- It joins the Write service at sign-in.
+- Shares, invites, comments and replies become events.
+- Those events produce notifications in the bell.
+- Sharing with someone's ELUM Type address reaches their account.
+
+The full contract, and the plan for ELUM Type, are in [docs/ELUM-PLATFORM.md](../docs/ELUM-PLATFORM.md).
+
+Optional: set `VITE_ELUM_COOKIE_DOMAIN` (for example `.elum.services`) in every ELUM app so one
+sign-in covers them all.
+
+## Preferences
+
+Custom colours, the personal spelling dictionary and spelling settings are kept in
+`user_preferences`, one row per person, readable only by that person. The app changes
+them through `update_preferences(patch)`, which merges, so two devices changing
+different settings do not undo each other. Until the third migration is run, Write
+still works but shows "Your settings were not saved" when someone saves a colour.
 
 ## What the database enforces
 

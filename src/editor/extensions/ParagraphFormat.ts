@@ -1,7 +1,21 @@
 import { Extension } from '@tiptap/core';
 import type { Transaction } from '@tiptap/pm/state';
 
-/** Paragraph-level formatting: line spacing, space before and after, and indent. */
+/** Paragraph-level formatting: line spacing, space before and after, indent, and first-line indent. */
+
+/**
+ * `first`: the first line starts half an inch in (body text in MLA, APA and Chicago).
+ * `hanging`: every line but the first starts half an inch in (works cited and reference lists).
+ * `none`: no first-line indent, even where the document's style adds one.
+ */
+export type TextIndent = 'first' | 'hanging' | 'none';
+export const TEXT_INDENTS: TextIndent[] = ['first', 'hanging', 'none'];
+
+const TEXT_INDENT_STYLE: Record<TextIndent, string> = {
+  first: 'text-indent: 0.5in',
+  hanging: 'padding-left: 0.5in; text-indent: -0.5in',
+  none: 'text-indent: 0',
+};
 
 export const MAX_INDENT = 8;
 /** Each indent step is half an inch, as in most word processors. */
@@ -18,6 +32,8 @@ declare module '@tiptap/core' {
       setSpaceAfter: (points: number | null) => ReturnType;
       indent: () => ReturnType;
       outdent: () => ReturnType;
+      /** First-line or hanging indent, or `none` to switch off an academic style's indent. */
+      setTextIndent: (value: TextIndent | null) => ReturnType;
     };
   }
 }
@@ -56,6 +72,21 @@ export const ParagraphFormat = Extension.create<{ types: string[] }>({
             default: null,
             parseHTML: (el) => parsePoints(el.style.marginBottom),
             renderHTML: (attrs) => (attrs.spaceAfter != null ? { style: `margin-bottom: ${attrs.spaceAfter}pt` } : {}),
+          },
+          // Paragraphs Write generates for a works cited or reference list (see academic/).
+          citation: {
+            default: null,
+            parseHTML: (el) => el.getAttribute('data-citation'),
+            renderHTML: (attrs) => (attrs.citation ? { 'data-citation': attrs.citation } : {}),
+          },
+          textIndent: {
+            default: null,
+            parseHTML: (el) => {
+              const v = el.getAttribute('data-text-indent');
+              return TEXT_INDENTS.includes(v as TextIndent) ? v : null;
+            },
+            renderHTML: (attrs) =>
+              attrs.textIndent ? { 'data-text-indent': attrs.textIndent, style: TEXT_INDENT_STYLE[attrs.textIndent as TextIndent] } : {},
           },
           indent: {
             default: null,
@@ -104,6 +135,7 @@ export const ParagraphFormat = Extension.create<{ types: string[] }>({
       setSpaceAfter: (points) => setAttr('spaceAfter', points),
       indent: () => shiftIndent(1),
       outdent: () => shiftIndent(-1),
+      setTextIndent: (value) => setAttr('textIndent', value),
     };
   },
 });
