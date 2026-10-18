@@ -731,7 +731,7 @@ export function DocWorkspace({ initialDoc, initialComments }: Props) {
 }
 
 function SaveIndicator({ status, uploads, onConflict }: { status: SaveStatus; uploads: number; onConflict: () => void }) {
-  // Where documents live: the account (Supabase or the ELUM API), or only this browser in preview mode.
+  // Where documents live: the account (Supabase or the ELUM API), or only this browser when Write runs unconnected for development.
   const local = api.mode === 'local';
   if (uploads > 0 || status === 'pending' || status === 'saving') {
     return (
@@ -756,7 +756,7 @@ function SaveIndicator({ status, uploads, onConflict }: { status: SaveStatus; up
       );
     default:
       return local ? (
-        <span className="save-status" data-tone="local" role="status" data-tip="Preview mode: documents stay in this browser until Write is connected to its server">
+        <span className="save-status" data-tone="local" role="status" data-tip="This copy of Write is not connected to ELUM, so documents stay in this browser">
           <HardDrive size={15} strokeWidth={1.75} /> <span className="save-status__label">Saved in this browser only</span>
         </span>
       ) : (

@@ -236,7 +236,6 @@ function ShareBody({ doc, onClose, onSharesChanged }: { doc: DocumentRecord; onC
               ) : options.length === 0 ? (
                 <div className="share__hint muted">
                   No one matches “{query.trim()}”. Type their full email address to invite them.
-                  {api.mode === 'local' && ' In preview mode you can also find the demo people, such as Ada or Jonah.'}
                 </div>
               ) : (
                 options.map((r, i) => (

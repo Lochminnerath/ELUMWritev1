@@ -298,12 +298,6 @@ export function AuthPage({ mode }: { mode: Mode }) {
           <p className="auth__switch">
             {isSignUp ? 'Already have an account?' : 'New to Write?'} <Link to={switchHref}>{isSignUp ? 'Sign in' : 'Create an account'}</Link>
           </p>
-
-          {api.mode === 'local' && (
-            <p className="auth__local muted">
-              Preview mode: your account and documents are kept in this browser until the ELUM API is connected.
-            </p>
-          )}
         </form>
       </main>
     </div>

@@ -20,10 +20,10 @@ npm install
 npm run dev        # http://localhost:5173
 ```
 
-Without any settings it runs in preview mode, with data kept in the browser. To use
-Supabase, follow [supabase/README.md](supabase/README.md).
+Without any settings it runs unconnected, for development only, with data kept in the browser
+(Netlify builds refuse to run that way). To use Supabase, follow [supabase/README.md](supabase/README.md).
 
-Create an account, or sign in as one of the demo people (preview mode only):
+Unconnected, you can also sign in as one of the demo people:
 
 | Name | Email | Password |
 | --- | --- | --- |
@@ -229,3 +229,9 @@ install icons.
 - **Exports** to .docx and PDF without the print dialog.
 - **The 55 ELUM fonts**, dropped into the catalogue above.
 - **Notifications** when someone shares a document or replies to a comment.
+
+## What's new
+
+`src/whatsnew/releases.ts` lists what changed, newest first. When an update ships, add a release at
+the top with a new id: everyone sees it once, the next time they open Write, and can read every
+release again from the account menu (What's new).
