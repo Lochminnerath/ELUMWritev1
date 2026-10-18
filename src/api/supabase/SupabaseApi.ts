@@ -157,7 +157,7 @@ export class SupabaseApi implements ElumApi {
   private readonly signedUrls = new Map<string, { url: string; expires: number }>();
 
   constructor(url: string, anonKey: string, client?: SupabaseClient) {
-    // With VITE_ELUM_COOKIE_DOMAIN set (such as .elum.example), the session lives in cookies on
+    // With VITE_ELUM_COOKIE_DOMAIN set (such as .elum.services), the session lives in cookies on
     // that domain, so one sign-in covers every ELUM service. Otherwise it stays in this site's storage.
     const cookieDomain = import.meta.env.VITE_ELUM_COOKIE_DOMAIN?.trim();
     this.sb =
@@ -228,6 +228,34 @@ export class SupabaseApi implements ElumApi {
       };
     },
   };
+
+  // ------------------------------------------------- signing in across apps
+
+  async handoff(to: string, next: string): Promise<string> {
+    await this.me();
+    const { data, error } = await this.sb.functions.invoke<{ data?: { url: string } }>('account-handoff', { body: { to, next } });
+    if (error || !data?.data?.url) throw new ApiError('server', 'We could not sign you in there.');
+    return data.data.url;
+  }
+
+  async completeHandoff(tokenHash: string): Promise<Session> {
+    const { data, error } = await this.sb.auth.verifyOtp({ token_hash: tokenHash, type: 'email' });
+    if (error || !data.session) throw new ApiError('unauthorized', 'That sign-in link has expired or was already used. Sign in again.');
+    return this.sessionFor(data.session);
+  }
+
+  /** The profile picture from ELUM Account, when there is one (older databases have none). */
+  private async pictureUrl(id: string): Promise<string | null> {
+    try {
+      const { data } = await this.sb.rpc('elum_pictures', { p_ids: [id] });
+      const path = (data as { picture: string }[] | null)?.[0]?.picture;
+      if (!path) return null;
+      const signed = await this.sb.storage.from('avatars').createSignedUrl(path, 60 * 60);
+      return signed.data?.signedUrl ?? null;
+    } catch {
+      return null;
+    }
+  }
 
   // ---------------------------------------------------------------- sessions
 
@@ -604,7 +632,7 @@ export class SupabaseApi implements ElumApi {
     void this.sb.rpc('elum_join_service', { p_service: 'write' }).then(() => undefined, () => undefined);
     return {
       token: session.access_token,
-      user: toUser(profile),
+      user: { ...toUser(profile), pictureUrl: await this.pictureUrl(profile.id) },
       expiresAt: new Date((session.expires_at ?? 0) * 1000).toISOString(),
     };
   }

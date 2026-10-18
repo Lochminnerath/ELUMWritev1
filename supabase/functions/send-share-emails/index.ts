@@ -3,8 +3,8 @@
 //
 // Secrets (supabase secrets set ...):
 //   BREVO_API_KEY      Brevo API key. Without it, nothing is sent and the queue waits.
-//   SHARE_EMAIL_FROM   Sender, for example "ELUM Write <write@elum.example>". Must be a Brevo-verified sender.
-//   APP_URL            Where Write is hosted, for example https://write.elum.example
+//   SHARE_EMAIL_FROM   Sender, for example "ELUM Write <write@elum.services>". Must be a Brevo-verified sender.
+//   APP_URL            Where Write is hosted, for example https://write.elum.services
 //   CRON_SECRET        Shared secret the scheduler sends as "Authorization: Bearer <secret>".
 // SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are provided by Supabase.
 //

@@ -45,6 +45,12 @@ export interface ElumApi {
   /** Called when the server rejects the session (expired or revoked). Returns an unsubscribe function. */
   onUnauthorized(handler: () => void): () => void;
 
+  // Signing in across ELUM apps through ELUM Account. Only on the platform backend (Supabase).
+  /** A one-time sign-in for another ELUM app (account-handoff): where to send the browser. */
+  handoff?(to: string, next: string): Promise<string>;
+  /** Trades a handoff token from ELUM Account for a session here. */
+  completeHandoff?(tokenHash: string): Promise<Session>;
+
   // Notifications from every ELUM service. Only on the platform backend (Supabase); absent elsewhere.
   readonly notifications?: NotificationsApi;
 

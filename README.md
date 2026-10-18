@@ -127,6 +127,14 @@ sun button, or choose in the account menu. The choice is remembered.
 **Mobile.** Pages reflow to the screen width, the toolbar scrolls, and the
 comments panel becomes a drawer.
 
+**ELUM Account.** With `VITE_ELUM_ACCOUNT_URL` set (for example
+https://elumaccounts.netlify.app), signing in goes through ELUM Account, and
+the account menu opens it for your profile, picture, privacy and people.
+Every document has its own link (`/d/<id>`). Open one while signed out and
+ELUM Account brings you straight back to it, signed in; Write then opens it
+if you have access. How sign-in crosses sites is explained in ELUMAccountsV1
+`docs/SIGN-IN.md`.
+
 ## How it is built
 
 ```

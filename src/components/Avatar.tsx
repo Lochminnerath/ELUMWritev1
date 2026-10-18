@@ -8,7 +8,11 @@ export function initials(name: string): string {
   return (first + last).toUpperCase();
 }
 
-export function Avatar({ user, size = 32, title }: { user: Pick<PublicUser, 'name' | 'color'>; size?: number; title?: string }) {
+/** The person's profile picture (from ELUM Account), or their initials on their colour. */
+export function Avatar({ user, size = 32, title }: { user: Pick<PublicUser, 'name' | 'color'> & { pictureUrl?: string | null }; size?: number; title?: string }) {
+  if (user.pictureUrl) {
+    return <img className="avatar avatar--picture" src={user.pictureUrl} width={size} height={size} alt={title ?? ''} title={title} style={{ width: size, height: size }} />;
+  }
   return (
     <span
       className="avatar"

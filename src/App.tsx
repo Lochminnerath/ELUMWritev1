@@ -8,6 +8,7 @@ import { FullPageLoader } from './components/Loader';
 import { ToastProvider } from './components/Toast';
 import { TooltipLayer } from './components/TooltipLayer';
 import { AuthPage } from './pages/AuthPage';
+import { HandoffPage } from './pages/HandoffPage';
 import { HomePage } from './pages/HomePage';
 import { PreferencesProvider } from './preferences/PreferencesProvider';
 import { ThemeProvider } from './theme/ThemeProvider';
@@ -40,6 +41,7 @@ export function App() {
                   </RedirectIfSignedIn>
                 }
               />
+              <Route path="/auth/handoff" element={<HandoffPage />} />
               <Route
                 path="/"
                 element={

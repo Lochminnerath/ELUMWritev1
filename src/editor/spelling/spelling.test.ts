@@ -38,7 +38,7 @@ describe('finding words to check', () => {
           text('codeword', [{ type: 'code' }]),
           text(' '),
           text('linkk', [{ type: 'link', attrs: { href: 'https://example.org' } }]),
-          text(' mail ada@example.org www.elum.example NASA iPhone 3rd x99 a done'),
+          text(' mail ada@example.org www.elum.services NASA iPhone 3rd x99 a done'),
         ],
       },
       { type: 'codeBlock', content: [text('consst x')] },

@@ -21,6 +21,8 @@ export interface User {
   color: string;
   accountType: AccountType;
   createdAt: string;
+  /** Their profile picture (set in ELUM Account), as a link the browser can load. */
+  pictureUrl?: string | null;
 }
 
 export type PublicUser = Pick<User, 'id' | 'name' | 'email' | 'color'>;

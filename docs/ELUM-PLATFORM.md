@@ -62,9 +62,9 @@ Rules every service keeps:
 
 ```
                        ┌──────────── one Supabase project ─────────────┐
- write.elum.example ──▶│ Auth      one user per person (auth.users)    │
- type.elum.example  ──▶│ Postgres                                       │
- account.elum.example ▶│   public.profiles      the ELUM account        │
+ write.elum.services ──▶│ Auth      one user per person (auth.users)    │
+ type.elum.services  ──▶│ Postgres                                       │
+ account.elum.services ▶│   public.profiles      the ELUM account        │
  (browse, make, store) │   elum.*               platform (private)      │
                        │   public.* (Write)     documents, shares ...   │
                        │   type.*               Type's own tables       │
@@ -79,11 +79,11 @@ Rules every service keeps:
 ```
 
 - **Domains** (placeholders until you choose them; see section 11):
-  - `elum.example` is the family home.
-  - `account.elum.example` hosts the shared sign-in and account pages.
+  - `elum.services` is the family home.
+  - `account.elum.services` hosts the shared sign-in and account pages.
   - Each product has a subdomain: `write.`, `type.` and so on.
-  - Type addresses live on their own mail domain: `type_domain` in `elum.config`, today `type.elum.example`.
-- **Sign-in is shared.** All products keep the Supabase session in cookies on the parent domain (`.elum.example`), so signing in once covers every product (section 3.6).
+  - Type addresses live on their own mail domain: `type_domain` in `elum.config`, today `type.elum.services`.
+- **Sign-in is shared.** All products keep the Supabase session in cookies on the parent domain (`.elum.services`), so signing in once covers every product (section 3.6).
 - **Schemas and ownership:**
 
 | Owner | Where | Contents |
@@ -185,16 +185,16 @@ Recovery for Type accounts:
 
 ### 3.5 Signing in (both kinds)
 
-- **Email and password** through Supabase Auth, at `account.elum.example/signin?next=<url>` or inside each product.
+- **Email and password** through Supabase Auth, at `account.elum.services/signin?next=<url>` or inside each product.
   - Write signs people in itself today. Products may keep their own sign-in page, but it must look and behave the same (section 9.6).
-  - `next` must be a path or an `https://*.elum.example` URL. Reject anything else, to avoid open redirects.
+  - `next` must be a path or an `https://*.elum.services` URL. Reject anything else, to avoid open redirects.
 - **Email confirmation** must stay on in Auth settings for external accounts.
 - **Password rules:** at least 8 characters. Check against leaked passwords (an Auth setting).
 - **Later:** passkeys and two-factor (Supabase MFA). Design the account pages with room for a Security section.
 
 ### 3.6 One sign-in for every service
 
-Set `VITE_ELUM_COOKIE_DOMAIN=.elum.example` (or the equivalent) in every web app. Write then
+Set `VITE_ELUM_COOKIE_DOMAIN=.elum.services` (or the equivalent) in every web app. Write then
 stores the Supabase session in cookies on that domain, using storage key `elum-auth`; see
 `src/api/supabase/cookieStorage.ts` in Write, which can be copied as is. Large sessions are split
 across numbered cookies, with `SameSite=Lax; Secure` and a 400-day lifetime.
@@ -213,7 +213,7 @@ across numbered cookies, with `SameSite=Lax; Secure` and a 400-day lifetime.
 
 ### 3.8 Account pages (to build, shared by all services)
 
-Host them at `account.elum.example`, with a link from every product's user menu ("Your ELUM
+Host them at `account.elum.services`, with a link from every product's user menu ("Your ELUM
 account"). The sections:
 
 | Section | Contents |
@@ -234,7 +234,7 @@ account"). The sections:
 - **The service registry.**
   - `elum.services` lists every product, with its brand colour token and status: `planned`, `beta`, `active` or `retired`.
   - Today Write is `active`; Type, Browse, Make and Store are `planned`.
-  - Switch Type to `beta` when it opens: `update elum.services set status = 'beta', url = 'https://type.elum.example' where id = 'type'`.
+  - Switch Type to `beta` when it opens: `update elum.services set status = 'beta', url = 'https://type.elum.services' where id = 'type'`.
 - **Joining a service.** Apps call `elum_join_service('<id>')` on every sign-in or app start.
   - The first call creates a `service_accounts` row and emits `elum.service.joined`.
   - Later calls update `last_seen_at`.
@@ -569,7 +569,7 @@ The `type-inbox` worker claims deliveries:
 - it skips rows with `channel != 'type_inbox'`;
 - for each `write.*` event, it creates a `type.inbox_cards` row:
   - title and body from `payload.notification`;
-  - action "Open in Write" pointing to `https://write.elum.example` plus the link;
+  - action "Open in Write" pointing to `https://write.elum.services` plus the link;
 - it then finishes the delivery.
 
 Write's own email for that share was already skipped, because `send-share-emails` skips Type
@@ -577,7 +577,7 @@ accounts. People get the card in Type, and the bell entry in every app.
 
 Type emits `type.message.received` for each new message, with a `notification`. The bell in Write
 and every other product then shows "Rae sent you a message", linking to
-`https://type.elum.example/t/<thread>`.
+`https://type.elum.services/t/<thread>`.
 
 ### 8.6 Acceptance for a first Type release
 
@@ -835,11 +835,11 @@ in brackets.
 
 | Decision | Options / note |
 | --- | --- |
-| Family domain | Replaces `elum.example` everywhere. Needed for shared sign-in. |
+| Family domain | Replaces `elum.services` everywhere. Needed for shared sign-in. |
 | Type mail domain | Such as `elumtype.com`, or a subdomain of the family domain. Update `elum.config.type_domain`. Choose before anyone takes a handle, because addresses are permanent. |
 | Inbound mail provider | Brevo inbound parsing (one vendor), or a dedicated inbound service. |
 | Recovery for Type accounts | Is a recovery email required or optional? Optional is friendlier; required is safer. |
-| Central account site | Build `account.elum.example` now, or keep sign-in inside each product for the first Type release. |
+| Central account site | Build `account.elum.services` now, or keep sign-in inside each product for the first Type release. |
 | Who can find whom | People search reaches every signed-in account today. Consider limiting it to people you have shared or written with. |
 
 ---
@@ -879,7 +879,7 @@ create table elum.config (
   key text primary key,
   value text not null
 );
-insert into elum.config (key, value) values ('type_domain', 'type.elum.example');
+insert into elum.config (key, value) values ('type_domain', 'type.elum.services');
 
 -- ---------------------------------------------------------------- services
 

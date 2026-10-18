@@ -109,7 +109,7 @@ Write uses it in four ways:
 
 The full contract, and the plan for ELUM Type, are in [docs/ELUM-PLATFORM.md](../docs/ELUM-PLATFORM.md).
 
-Optional: set `VITE_ELUM_COOKIE_DOMAIN` (for example `.elum.example`) in every ELUM app so one
+Optional: set `VITE_ELUM_COOKIE_DOMAIN` (for example `.elum.services`) in every ELUM app so one
 sign-in covers them all.
 
 ## Preferences

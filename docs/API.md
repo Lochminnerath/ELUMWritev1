@@ -9,7 +9,7 @@ through `src/api/http/HttpApi.ts`. Until the API is live, `src/api/local/LocalAp
 implements the same rules inside the browser, and `src/api/local/LocalApi.test.ts`
 is the executable version of this document.
 
-Set `VITE_ELUM_API_URL` (for example `https://api.elum.example/v1`) and the app
+Set `VITE_ELUM_API_URL` (for example `https://api.elum.services/v1`) and the app
 switches to the HTTP client. Nothing else changes.
 
 ## Conventions

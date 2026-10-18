@@ -5,6 +5,7 @@ import { api, type AppNotification } from '../api';
 import { formatWhen } from '../lib/time';
 import { Avatar } from './Avatar';
 import { Popover } from './Popover';
+import { openElsewhere } from '../lib/elum';
 import './NotificationBell.css';
 
 const POLL_MS = 60_000;
@@ -45,7 +46,8 @@ export function NotificationBell() {
   const open = (n: AppNotification) => {
     if (!n.readAt) void feed.markRead([n.id]).then(load);
     if (!n.link) return;
-    if (/^https?:\/\//.test(n.link)) window.open(n.link, '_blank', 'noopener,noreferrer');
+    // Links into Type or ELUM Account open there already signed in.
+    if (/^https?:\/\//.test(n.link)) void openElsewhere(n.link, true);
     else if (n.service === 'write') navigate(n.link);
   };
 

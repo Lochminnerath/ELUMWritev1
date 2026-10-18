@@ -1,8 +1,9 @@
-import { LogOut, Monitor, Moon, PenLine, Sun } from 'lucide-react';
+import { CircleUser, LogOut, Monitor, Moon, PenLine, Sun } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { errorMessage } from '../api';
 import { useAuth, useUser } from '../auth/AuthProvider';
+import { ACCOUNT_URL, accountsSignIn, openAccount } from '../lib/elum';
 import { useTheme } from '../theme/ThemeProvider';
 import { Avatar } from './Avatar';
 import { Dialog } from './Dialog';
@@ -57,22 +58,41 @@ export function UserMenu() {
               { label: 'Dark', icon: <Moon {...ICON} />, checked: preference === 'dark', onSelect: () => setPreference('dark') },
             ],
           },
-          {
-            label: 'Edit your name',
-            icon: <PenLine {...ICON} />,
-            onSelect: () => {
-              setName(user.name);
-              setError(null);
-              setEditing(true);
-            },
-          },
+          ACCOUNT_URL
+            ? {
+                label: 'Profile and picture',
+                hint: 'In your ELUM account',
+                icon: <PenLine {...ICON} />,
+                onSelect: () => openAccount('/profile'),
+              }
+            : {
+                label: 'Edit your name',
+                icon: <PenLine {...ICON} />,
+                onSelect: () => {
+                  setName(user.name);
+                  setError(null);
+                  setEditing(true);
+                },
+              },
+          ...(ACCOUNT_URL
+            ? [
+                {
+                  label: 'Your ELUM account',
+                  hint: 'Password, people, privacy, notifications',
+                  icon: <CircleUser {...ICON} />,
+                  onSelect: () => openAccount('/'),
+                },
+              ]
+            : []),
           'separator',
           {
             label: 'Sign out',
             icon: <LogOut {...ICON} />,
             onSelect: async () => {
               await signOut();
-              navigate('/signin', { replace: true });
+              // Signed in through ELUM Account: sign out there too, then come back.
+              if (accountsSignIn) window.location.assign(`${ACCOUNT_URL}/signout?to=${encodeURIComponent(`${location.origin}/`)}`);
+              else navigate('/signin', { replace: true });
             },
           },
         ]}

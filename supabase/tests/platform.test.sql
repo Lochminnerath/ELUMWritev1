@@ -22,7 +22,7 @@ select expect(elum.account_for_address(' FEN@example.org ') = :'friend', 'addres
 select expect((select count(*) from elum.events where type = 'elum.account.created') = 2, 'new accounts are announced');
 
 -- Type addresses: server only, unique, and not reserved names.
-select expect(elum.assign_type_address(:'friend', 'Fen') = 'fen@type.elum.example', 'Type address from the handle');
+select expect(elum.assign_type_address(:'friend', 'Fen') = 'fen@type.elum.services', 'Type address from the handle');
 select expect((select account_type = 'type' and handle = 'fen' from profiles where id = :'friend'), 'the account becomes a Type account');
 select expect(elum.delivery_channel(:'friend') = 'type_inbox' and elum.delivery_channel(:'owner') = 'email', 'channels follow the account type');
 select expect_error($$select elum.assign_type_address('00000000-0000-0000-0000-00000000003a', 'fen')$$, 'PT409', 'handles are unique');
@@ -44,7 +44,7 @@ select expect(not elum_handle_available('fen') and elum_handle_available('ola.k'
 
 -- Sharing with someone's Type address reaches their account and tells them.
 insert into documents (id, title) values (:'doc', 'Field notes');
-select expect((select share_by_email(:'doc', 'fen@type.elum.example', 'commenter') ->> 'userId') = :'friend', 'Type addresses resolve when sharing');
+select expect((select share_by_email(:'doc', 'fen@type.elum.services', 'commenter') ->> 'userId') = :'friend', 'Type addresses resolve when sharing');
 select expect((select share_by_email(:'doc', 'new@example.org', 'viewer') ->> 'kind') = 'invite', 'unknown addresses are invited');
 select expect((select count(*) from elum_notifications()) = 0, 'the actor gets no notification');
 insert into comments (id, doc_id, body) values ('c-own-000001', :'doc', 'Note to self');
