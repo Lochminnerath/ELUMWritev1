@@ -55,6 +55,7 @@ import { StylesPanel } from './academic/StylesPanel';
 import { useSpellChecker, useSpelling } from './spelling/useSpelling';
 import { Toolbar } from './toolbar/Toolbar';
 import { useAutosave, type SaveStatus } from './useAutosave';
+import { ElumLauncher } from '../components/ElumLauncher';
 
 const POLL_MS = 15_000;
 const MENU_ICON = { size: 16, strokeWidth: 1.75 };
@@ -527,6 +528,7 @@ export function DocWorkspace({ initialDoc, initialComments }: Props) {
               {openIds.length > 0 && <span className="comments-toggle__count">{openIds.length}</span>}
             </button>
           )}
+          <ElumLauncher />
           <NotificationBell />
           <button type="button" className="share-btn" onClick={() => setShareOpen(true)}>
             <ShareIcon size={18} strokeWidth={1.9} />

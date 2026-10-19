@@ -18,6 +18,7 @@ import { formatFull, formatWhen, formatWhenInline } from '../lib/time';
 import { ThemeToggle } from '../theme/ThemeToggle';
 import { DocThumbnail } from './DocThumbnail';
 import './HomePage.css';
+import { ElumLauncher } from '../components/ElumLauncher';
 
 type Sort = 'recent' | 'modified' | 'title';
 type View = 'grid' | 'list';
@@ -174,6 +175,7 @@ export function HomePage() {
           )}
         </label>
         <div className="app-header__end">
+          <ElumLauncher />
           <NotificationBell />
           <ThemeToggle />
           <UserMenu />

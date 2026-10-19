@@ -35,6 +35,11 @@ export const RELEASES: Release[] = [
     intro: "Small touches that make Write feel like part of the ELUM family.",
     features: [
       {
+        title: 'Move between apps',
+        text: 'Open the ELUM apps window from the dots at the top of the page, and jump to Write, Type, Make or your account in one click.',
+        art: 'spark',
+      },
+      {
         title: "A symbol for sharing",
         text: "Share now has its own ELUM symbol: two people, and the part you share between them.",
         art: 'share',
