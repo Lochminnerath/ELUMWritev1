@@ -1,5 +1,5 @@
 import type { Editor } from '@tiptap/core';
-import { TriangleAlert } from 'lucide-react';
+import { WarningIcon } from '../components/icons/ElumIcons';
 import { Dialog } from '../components/Dialog';
 import { countDocument } from './exporters';
 import { keyLabel, SHORTCUTS } from './keys';
@@ -81,7 +81,7 @@ export function ConflictDialog({
     <Dialog
       open={open}
       onClose={onClose}
-      icon={<TriangleAlert size={22} strokeWidth={1.75} color="var(--write-deep)" />}
+      icon={<WarningIcon size={22} strokeWidth={1.75} color="var(--write-deep)" />}
       title="This document changed somewhere else"
       description="Someone, or you in another tab, saved a newer version. Your latest changes are not saved yet."
       width={480}

@@ -1,6 +1,7 @@
 import type { Editor } from '@tiptap/core';
 import { EditorContent, useEditor, useEditorState } from '@tiptap/react';
-import { ChevronDown, CloudCheck, CloudOff, FilePlus2, FolderOpen, HardDrive, MessageSquare, Minus, PenLine, Plus, TriangleAlert } from 'lucide-react';
+import { ChevronDown, FolderOpen, HardDrive, MessageSquare, Minus, Plus } from 'lucide-react';
+import { NewIcon, OfflineIcon, RenameIcon, SavedIcon, WarningIcon } from '../components/icons/ElumIcons';
 import { DeleteIcon, DownloadIcon, DuplicateIcon, PrintIcon, SignOutIcon } from '../components/icons/ElumIcons';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
@@ -411,10 +412,10 @@ export function DocWorkspace({ initialDoc, initialComments }: Props) {
   const toolPanel = panel && (editable || (panel !== 'insert' && panel !== 'spelling' && panel !== 'styles')) ? panel : null;
 
   const documentMenu = (): MenuEntry[] => [
-    { label: 'New document', icon: <FilePlus2 {...MENU_ICON} />, onSelect: () => void newDocument() },
+    { label: 'New document', icon: <NewIcon {...MENU_ICON} />, onSelect: () => void newDocument() },
     { label: 'Your documents', icon: <FolderOpen {...MENU_ICON} />, onSelect: () => navigate('/') },
     { label: 'Make a copy', icon: <DuplicateIcon {...MENU_ICON} />, onSelect: () => void duplicate() },
-    { label: 'Rename', icon: <PenLine {...MENU_ICON} />, disabled: !editable, onSelect: () => titleInput.current?.focus() },
+    { label: 'Rename', icon: <RenameIcon {...MENU_ICON} />, disabled: !editable, onSelect: () => titleInput.current?.focus() },
     'separator',
     { label: 'Share', icon: <ShareIcon size={MENU_ICON.size} strokeWidth={MENU_ICON.strokeWidth} />, onSelect: () => setShareOpen(true) },
     {
@@ -731,13 +732,13 @@ function SaveIndicator({ status, uploads, onConflict }: { status: SaveStatus; up
     case 'error':
       return (
         <span className="save-status" data-tone="error" role="status">
-          <CloudOff size={15} strokeWidth={1.75} /> <span className="save-status__label">Not saved yet. Trying again</span>
+          <OfflineIcon size={15} strokeWidth={1.75} /> <span className="save-status__label">Not saved yet. Trying again</span>
         </span>
       );
     case 'conflict':
       return (
         <button type="button" className="save-status save-status--button" data-tone="error" onClick={onConflict}>
-          <TriangleAlert size={15} strokeWidth={1.75} /> <span className="save-status__label">Changed elsewhere</span>
+          <WarningIcon size={15} strokeWidth={1.75} /> <span className="save-status__label">Changed elsewhere</span>
         </button>
       );
     default:
@@ -747,7 +748,7 @@ function SaveIndicator({ status, uploads, onConflict }: { status: SaveStatus; up
         </span>
       ) : (
         <span className="save-status" role="status" data-tip="Saved to your ELUM account, so it is on every device you sign in to">
-          <CloudCheck size={15} strokeWidth={1.75} /> <span className="save-status__label">Saved to your account</span>
+          <SavedIcon size={15} strokeWidth={1.75} /> <span className="save-status__label">Saved to your account</span>
         </span>
       );
   }

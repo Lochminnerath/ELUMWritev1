@@ -1,6 +1,7 @@
 import type { Editor } from '@tiptap/core';
 import { useEditorState } from '@tiptap/react';
-import { Check, FilePlus2, PenLine, Plus, Quote } from 'lucide-react';
+import { Check, Plus, Quote } from 'lucide-react';
+import { NewIcon, RenameIcon } from '../../components/icons/ElumIcons';
 import { DeleteIcon } from '../../components/icons/ElumIcons';
 import { useState } from 'react';
 import { useUser } from '../../auth/AuthProvider';
@@ -66,7 +67,7 @@ export function StylesPanel({ editor, onClose }: { editor: Editor; onClose: () =
         {style && (
           <>
             <button type="button" className="styles-panel__toggle" aria-expanded={setupOpen} onClick={() => setSetupOpen(!setupOpen)}>
-              <FilePlus2 size={16} strokeWidth={1.75} /> Set up the first page
+              <NewIcon size={16} strokeWidth={1.75} /> Set up the first page
             </button>
             {setupOpen && (
               <form
@@ -146,7 +147,7 @@ export function StylesPanel({ editor, onClose }: { editor: Editor; onClose: () =
                         setDialogOpen(true);
                       }}
                     >
-                      <PenLine size={16} strokeWidth={1.75} />
+                      <RenameIcon size={16} strokeWidth={1.75} />
                     </button>
                     <button
                       type="button"
