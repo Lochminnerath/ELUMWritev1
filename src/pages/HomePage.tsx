@@ -1,4 +1,5 @@
-import { Copy, EllipsisVertical, ExternalLink, Files, LayoutGrid, LayoutList, LogOut, PenLine, Plus, Search, Trash2, User, Users, X, type LucideIcon } from 'lucide-react';
+import { EllipsisVertical, ExternalLink, Files, LayoutGrid, LayoutList, PenLine, Plus, Search, User, Users, X, type LucideIcon } from 'lucide-react';
+import { DeleteIcon, DuplicateIcon, SignOutIcon } from '../components/icons/ElumIcons';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { api, errorMessage, type DocumentFilter, type DocumentSummary } from '../api';
@@ -149,11 +150,11 @@ export function HomePage() {
   const docMenu = (doc: DocumentSummary) => [
     { label: 'Open in new tab', icon: <ExternalLink {...ICON} />, onSelect: () => window.open(`/d/${doc.id}`, '_blank', 'noopener') },
     { label: 'Rename', icon: <PenLine {...ICON} />, disabled: !canEdit(doc.role), onSelect: () => setRenaming(doc) },
-    { label: 'Make a copy', icon: <Copy {...ICON} />, onSelect: () => void duplicate(doc) },
+    { label: 'Make a copy', icon: <DuplicateIcon {...ICON} />, onSelect: () => void duplicate(doc) },
     'separator' as const,
     doc.role === 'owner'
-      ? { label: 'Delete', icon: <Trash2 {...ICON} />, danger: true, onSelect: () => setDeleting(doc) }
-      : { label: 'Remove from my documents', icon: <LogOut {...ICON} />, onSelect: () => void leave(doc) },
+      ? { label: 'Delete', icon: <DeleteIcon {...ICON} />, danger: true, onSelect: () => setDeleting(doc) }
+      : { label: 'Remove from my documents', icon: <SignOutIcon {...ICON} />, onSelect: () => void leave(doc) },
   ];
 
   const firstName = user.name.split(/\s+/)[0];

@@ -1,6 +1,7 @@
 import type { Editor } from '@tiptap/core';
 import { useEditorState } from '@tiptap/react';
-import { Check, FilePlus2, PenLine, Plus, Quote, Trash2 } from 'lucide-react';
+import { Check, FilePlus2, PenLine, Plus, Quote } from 'lucide-react';
+import { DeleteIcon } from '../../components/icons/ElumIcons';
 import { useState } from 'react';
 import { useUser } from '../../auth/AuthProvider';
 import { PanelShell } from '../SidePanels';
@@ -153,7 +154,7 @@ export function StylesPanel({ editor, onClose }: { editor: Editor; onClose: () =
                       aria-label={`Remove ${s.title}`}
                       onClick={() => updateSettings(editor, { sources: settings.sources.filter((x) => x.id !== s.id) })}
                     >
-                      <Trash2 size={16} strokeWidth={1.75} />
+                      <DeleteIcon size={16} strokeWidth={1.75} />
                     </button>
                   </div>
                 </li>

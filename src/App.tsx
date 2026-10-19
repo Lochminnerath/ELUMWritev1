@@ -13,6 +13,7 @@ import { HomePage } from './pages/HomePage';
 import { PreferencesProvider } from './preferences/PreferencesProvider';
 import { ThemeProvider } from './theme/ThemeProvider';
 import { WhatsNew } from './whatsnew/WhatsNew';
+import { SecurityLayer } from './security/SecurityLayer';
 
 // The editor is the heaviest part of the app, so it loads on demand.
 const EditorPage = lazy(() => import('./editor/EditorPage'));
@@ -67,6 +68,7 @@ export function App() {
           </BrowserRouter>
           <TooltipLayer />
           <WhatsNew />
+          <SecurityLayer />
           </PreferencesProvider>
         </AuthProvider>
       </ToastProvider>

@@ -29,6 +29,7 @@ import type {
 } from '../types';
 import { checkSignUp, cleanComment, cleanName, cleanTitle, handleProblem, isEmail, MIN_PASSWORD } from '../validation';
 import { welcomeDocument } from '../welcome';
+import { PENDING_ROLE, tokenRole } from '../../security/approvals';
 
 /**
  * The ELUM API on Supabase: Auth for accounts, Postgres (with the row level
@@ -730,6 +731,10 @@ export class SupabaseApi implements ElumApi {
   }
 
   private async sessionFor(session: AuthSession): Promise<Session> {
+    // Waiting for approval from another device (ELUM Account > Security): nothing else answers it.
+    if (tokenRole(session.access_token) === PENDING_ROLE) {
+      throw new ApiError('approval_required', 'Approve this sign-in on a device you are already signed in to.');
+    }
     const profile = await this.profileFor(session.user.id);
     if (!profile.welcomed) await this.welcome(profile);
     // Tell the platform this account uses Write. Optional: older databases lack the function.

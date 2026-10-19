@@ -1,23 +1,7 @@
 import type { Editor } from '@tiptap/core';
 import { EditorContent, useEditor, useEditorState } from '@tiptap/react';
-import {
-  ChevronDown,
-  CloudCheck,
-  CloudOff,
-  Copy,
-  Download,
-  FilePlus2,
-  FolderOpen,
-  HardDrive,
-  LogOut,
-  MessageSquare,
-  Minus,
-  PenLine,
-  Plus,
-  Printer,
-  TriangleAlert,
-  Trash2,
-} from 'lucide-react';
+import { ChevronDown, CloudCheck, CloudOff, FilePlus2, FolderOpen, HardDrive, MessageSquare, Minus, PenLine, Plus, TriangleAlert } from 'lucide-react';
+import { DeleteIcon, DownloadIcon, DuplicateIcon, PrintIcon, SignOutIcon } from '../components/icons/ElumIcons';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { api, errorMessage, isApiError, type CommentThread, type DocNode, type DocumentRecord } from '../api';
@@ -429,20 +413,20 @@ export function DocWorkspace({ initialDoc, initialComments }: Props) {
   const documentMenu = (): MenuEntry[] => [
     { label: 'New document', icon: <FilePlus2 {...MENU_ICON} />, onSelect: () => void newDocument() },
     { label: 'Your documents', icon: <FolderOpen {...MENU_ICON} />, onSelect: () => navigate('/') },
-    { label: 'Make a copy', icon: <Copy {...MENU_ICON} />, onSelect: () => void duplicate() },
+    { label: 'Make a copy', icon: <DuplicateIcon {...MENU_ICON} />, onSelect: () => void duplicate() },
     { label: 'Rename', icon: <PenLine {...MENU_ICON} />, disabled: !editable, onSelect: () => titleInput.current?.focus() },
     'separator',
     { label: 'Share', icon: <ShareIcon size={MENU_ICON.size} strokeWidth={MENU_ICON.strokeWidth} />, onSelect: () => setShareOpen(true) },
     {
       label: 'Download',
-      icon: <Download {...MENU_ICON} />,
+      icon: <DownloadIcon {...MENU_ICON} />,
       items: [
         { label: 'PDF (.pdf)', hint: 'Save as PDF', onSelect: () => print(true) },
         { label: 'Web page (.html)', onSelect: () => void downloadHtml(editor, title, api) },
         { label: 'Plain text (.txt)', onSelect: () => downloadText(editor, title) },
       ],
     },
-    { label: 'Print', icon: <Printer {...MENU_ICON} />, shortcut: keyLabel('Mod+P'), onSelect: () => print() },
+    { label: 'Print', icon: <PrintIcon {...MENU_ICON} />, shortcut: keyLabel('Mod+P'), onSelect: () => print() },
     ...(narrow
       ? ([
           'separator',
@@ -459,8 +443,8 @@ export function DocWorkspace({ initialDoc, initialComments }: Props) {
       : []),
     'separator',
     role === 'owner'
-      ? { label: 'Delete', icon: <Trash2 {...MENU_ICON} />, danger: true, onSelect: () => setConfirmRemove(true) }
-      : { label: 'Remove from my documents', icon: <LogOut {...MENU_ICON} />, onSelect: () => void remove() },
+      ? { label: 'Delete', icon: <DeleteIcon {...MENU_ICON} />, danger: true, onSelect: () => setConfirmRemove(true) }
+      : { label: 'Remove from my documents', icon: <SignOutIcon {...MENU_ICON} />, onSelect: () => void remove() },
   ];
 
   return (
