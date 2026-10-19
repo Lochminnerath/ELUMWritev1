@@ -17,7 +17,6 @@ import {
   Printer,
   TriangleAlert,
   Trash2,
-  UserPlus,
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
@@ -27,6 +26,7 @@ import { emptyDocument } from '../api/content';
 import { canComment, canEdit } from '../api/roles';
 import { useUser } from '../auth/AuthProvider';
 import { DocIcon, WriteMark } from '../components/Brand';
+import { ShareIcon } from '../components/ShareIcon';
 import { Dialog } from '../components/Dialog';
 import { Loader } from '../components/Loader';
 import { Menu, type MenuEntry } from '../components/Menu';
@@ -431,7 +431,7 @@ export function DocWorkspace({ initialDoc, initialComments }: Props) {
     { label: 'Make a copy', icon: <Copy {...MENU_ICON} />, onSelect: () => void duplicate() },
     { label: 'Rename', icon: <PenLine {...MENU_ICON} />, disabled: !editable, onSelect: () => titleInput.current?.focus() },
     'separator',
-    { label: 'Share', icon: <UserPlus {...MENU_ICON} />, onSelect: () => setShareOpen(true) },
+    { label: 'Share', icon: <ShareIcon size={MENU_ICON.size} strokeWidth={MENU_ICON.strokeWidth} />, onSelect: () => setShareOpen(true) },
     {
       label: 'Download',
       icon: <Download {...MENU_ICON} />,
@@ -529,7 +529,7 @@ export function DocWorkspace({ initialDoc, initialComments }: Props) {
           )}
           <NotificationBell />
           <button type="button" className="share-btn" onClick={() => setShareOpen(true)}>
-            <UserPlus size={17} strokeWidth={2} />
+            <ShareIcon size={18} strokeWidth={1.9} />
             <span>Share</span>
           </button>
           <ThemeToggle className="icon-btn icon-btn--round hide-narrow" />
