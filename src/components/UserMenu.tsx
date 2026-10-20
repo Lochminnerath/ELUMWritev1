@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { errorMessage } from '../api';
 import { useAuth, useUser } from '../auth/AuthProvider';
-import { accountsSignIn, ACCOUNT_URL, openAccount, rememberSignedOut } from '../lib/elum';
+import { ACCOUNT_URL, accountsSignIn, openAccount } from '../lib/elum';
 import { useTheme } from '../theme/ThemeProvider';
 import { openWhatsNew } from '../whatsnew/WhatsNew';
 import { Avatar } from './Avatar';
@@ -95,7 +95,6 @@ export function UserMenu() {
             onSelect: async () => {
               await signOut();
               // Signed in through ELUM Account: sign out there too, then come back.
-              rememberSignedOut();
               if (accountsSignIn) window.location.assign(`${ACCOUNT_URL}/signout?to=${encodeURIComponent(`${location.origin}/`)}`);
               else navigate('/signin', { replace: true });
             },
