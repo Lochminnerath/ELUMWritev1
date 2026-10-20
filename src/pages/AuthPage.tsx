@@ -117,7 +117,7 @@ export function AuthPage({ mode }: { mode: Mode }) {
           <span className="auth__stop" />
         </div>
         <div className="auth__art-copy">
-          <p className="label muted">Built by people. Runs without AI.</p>
+          <p className="label muted">Made by you. Runs without AI.</p>
           <p className="auth__tagline">Write freely. Share when you are ready.</p>
         </div>
       </aside>
