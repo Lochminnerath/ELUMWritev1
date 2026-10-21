@@ -1,5 +1,6 @@
 import type { Editor } from '@tiptap/core';
-import { BookPlus, EyeOff } from 'lucide-react';
+import { BookPlus } from 'lucide-react';
+import { HiddenIcon } from '../../components/icons/ElumIcons';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useFloatingPosition, useOutsidePress } from '../../components/Popover';
@@ -113,7 +114,7 @@ export function SpellMenu({ editor, spelling }: { editor: Editor; spelling: Spel
             close();
           }}
         >
-          <EyeOff size={16} strokeWidth={1.75} /> Ignore for now
+          <HiddenIcon size={16} strokeWidth={1.75} /> Ignore for now
         </button>
       </div>
     </div>,

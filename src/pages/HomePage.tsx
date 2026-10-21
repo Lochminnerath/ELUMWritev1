@@ -1,4 +1,6 @@
-import { Copy, EllipsisVertical, ExternalLink, Files, LayoutGrid, LayoutList, LogOut, PenLine, Plus, Search, Trash2, User, Users, X, type LucideIcon } from 'lucide-react';
+import { EllipsisVertical, Files, LayoutGrid, LayoutList, Plus, Search, User, Users, X, type LucideIcon } from 'lucide-react';
+import { OpenIcon, RenameIcon } from '../components/icons/ElumIcons';
+import { DeleteIcon, DuplicateIcon, SignOutIcon } from '../components/icons/ElumIcons';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { api, errorMessage, type DocumentFilter, type DocumentSummary } from '../api';
@@ -18,6 +20,7 @@ import { formatFull, formatWhen, formatWhenInline } from '../lib/time';
 import { ThemeToggle } from '../theme/ThemeToggle';
 import { DocThumbnail } from './DocThumbnail';
 import './HomePage.css';
+import { ElumLauncher } from '../components/ElumLauncher';
 
 type Sort = 'recent' | 'modified' | 'title';
 type View = 'grid' | 'list';
@@ -146,13 +149,13 @@ export function HomePage() {
     sort !== 'modified' && d.lastOpenedAt ? `Opened ${formatWhenInline(d.lastOpenedAt)}` : `Edited ${formatWhenInline(d.updatedAt)}`;
 
   const docMenu = (doc: DocumentSummary) => [
-    { label: 'Open in new tab', icon: <ExternalLink {...ICON} />, onSelect: () => window.open(`/d/${doc.id}`, '_blank', 'noopener') },
-    { label: 'Rename', icon: <PenLine {...ICON} />, disabled: !canEdit(doc.role), onSelect: () => setRenaming(doc) },
-    { label: 'Make a copy', icon: <Copy {...ICON} />, onSelect: () => void duplicate(doc) },
+    { label: 'Open in new tab', icon: <OpenIcon {...ICON} />, onSelect: () => window.open(`/d/${doc.id}`, '_blank', 'noopener') },
+    { label: 'Rename', icon: <RenameIcon {...ICON} />, disabled: !canEdit(doc.role), onSelect: () => setRenaming(doc) },
+    { label: 'Make a copy', icon: <DuplicateIcon {...ICON} />, onSelect: () => void duplicate(doc) },
     'separator' as const,
     doc.role === 'owner'
-      ? { label: 'Delete', icon: <Trash2 {...ICON} />, danger: true, onSelect: () => setDeleting(doc) }
-      : { label: 'Remove from my documents', icon: <LogOut {...ICON} />, onSelect: () => void leave(doc) },
+      ? { label: 'Delete', icon: <DeleteIcon {...ICON} />, danger: true, onSelect: () => setDeleting(doc) }
+      : { label: 'Remove from my documents', icon: <SignOutIcon {...ICON} />, onSelect: () => void leave(doc) },
   ];
 
   const firstName = user.name.split(/\s+/)[0];
@@ -174,6 +177,7 @@ export function HomePage() {
           )}
         </label>
         <div className="app-header__end">
+          <ElumLauncher />
           <NotificationBell />
           <ThemeToggle />
           <UserMenu />

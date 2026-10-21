@@ -1,24 +1,8 @@
 import type { Editor } from '@tiptap/core';
 import { EditorContent, useEditor, useEditorState } from '@tiptap/react';
-import {
-  ChevronDown,
-  CloudCheck,
-  CloudOff,
-  Copy,
-  Download,
-  FilePlus2,
-  FolderOpen,
-  HardDrive,
-  LogOut,
-  MessageSquare,
-  Minus,
-  PenLine,
-  Plus,
-  Printer,
-  TriangleAlert,
-  Trash2,
-  UserPlus,
-} from 'lucide-react';
+import { ChevronDown, FolderOpen, HardDrive, MessageSquare, Minus, Plus } from 'lucide-react';
+import { NewIcon, OfflineIcon, RenameIcon, SavedIcon, WarningIcon } from '../components/icons/ElumIcons';
+import { DeleteIcon, DownloadIcon, DuplicateIcon, PrintIcon, SignOutIcon } from '../components/icons/ElumIcons';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { api, errorMessage, isApiError, type CommentThread, type DocNode, type DocumentRecord } from '../api';
@@ -27,6 +11,7 @@ import { emptyDocument } from '../api/content';
 import { canComment, canEdit } from '../api/roles';
 import { useUser } from '../auth/AuthProvider';
 import { DocIcon, WriteMark } from '../components/Brand';
+import { ShareIcon } from '../components/ShareIcon';
 import { Dialog } from '../components/Dialog';
 import { Loader } from '../components/Loader';
 import { Menu, type MenuEntry } from '../components/Menu';
@@ -55,6 +40,7 @@ import { StylesPanel } from './academic/StylesPanel';
 import { useSpellChecker, useSpelling } from './spelling/useSpelling';
 import { Toolbar } from './toolbar/Toolbar';
 import { useAutosave, type SaveStatus } from './useAutosave';
+import { ElumLauncher } from '../components/ElumLauncher';
 
 const POLL_MS = 15_000;
 const MENU_ICON = { size: 16, strokeWidth: 1.75 };
@@ -426,22 +412,22 @@ export function DocWorkspace({ initialDoc, initialComments }: Props) {
   const toolPanel = panel && (editable || (panel !== 'insert' && panel !== 'spelling' && panel !== 'styles')) ? panel : null;
 
   const documentMenu = (): MenuEntry[] => [
-    { label: 'New document', icon: <FilePlus2 {...MENU_ICON} />, onSelect: () => void newDocument() },
+    { label: 'New document', icon: <NewIcon {...MENU_ICON} />, onSelect: () => void newDocument() },
     { label: 'Your documents', icon: <FolderOpen {...MENU_ICON} />, onSelect: () => navigate('/') },
-    { label: 'Make a copy', icon: <Copy {...MENU_ICON} />, onSelect: () => void duplicate() },
-    { label: 'Rename', icon: <PenLine {...MENU_ICON} />, disabled: !editable, onSelect: () => titleInput.current?.focus() },
+    { label: 'Make a copy', icon: <DuplicateIcon {...MENU_ICON} />, onSelect: () => void duplicate() },
+    { label: 'Rename', icon: <RenameIcon {...MENU_ICON} />, disabled: !editable, onSelect: () => titleInput.current?.focus() },
     'separator',
-    { label: 'Share', icon: <UserPlus {...MENU_ICON} />, onSelect: () => setShareOpen(true) },
+    { label: 'Share', icon: <ShareIcon size={MENU_ICON.size} strokeWidth={MENU_ICON.strokeWidth} />, onSelect: () => setShareOpen(true) },
     {
       label: 'Download',
-      icon: <Download {...MENU_ICON} />,
+      icon: <DownloadIcon {...MENU_ICON} />,
       items: [
         { label: 'PDF (.pdf)', hint: 'Save as PDF', onSelect: () => print(true) },
         { label: 'Web page (.html)', onSelect: () => void downloadHtml(editor, title, api) },
         { label: 'Plain text (.txt)', onSelect: () => downloadText(editor, title) },
       ],
     },
-    { label: 'Print', icon: <Printer {...MENU_ICON} />, shortcut: keyLabel('Mod+P'), onSelect: () => print() },
+    { label: 'Print', icon: <PrintIcon {...MENU_ICON} />, shortcut: keyLabel('Mod+P'), onSelect: () => print() },
     ...(narrow
       ? ([
           'separator',
@@ -458,8 +444,8 @@ export function DocWorkspace({ initialDoc, initialComments }: Props) {
       : []),
     'separator',
     role === 'owner'
-      ? { label: 'Delete', icon: <Trash2 {...MENU_ICON} />, danger: true, onSelect: () => setConfirmRemove(true) }
-      : { label: 'Remove from my documents', icon: <LogOut {...MENU_ICON} />, onSelect: () => void remove() },
+      ? { label: 'Delete', icon: <DeleteIcon {...MENU_ICON} />, danger: true, onSelect: () => setConfirmRemove(true) }
+      : { label: 'Remove from my documents', icon: <SignOutIcon {...MENU_ICON} />, onSelect: () => void remove() },
   ];
 
   return (
@@ -527,9 +513,10 @@ export function DocWorkspace({ initialDoc, initialComments }: Props) {
               {openIds.length > 0 && <span className="comments-toggle__count">{openIds.length}</span>}
             </button>
           )}
+          <ElumLauncher />
           <NotificationBell />
           <button type="button" className="share-btn" onClick={() => setShareOpen(true)}>
-            <UserPlus size={17} strokeWidth={2} />
+            <ShareIcon size={18} strokeWidth={1.9} />
             <span>Share</span>
           </button>
           <ThemeToggle className="icon-btn icon-btn--round hide-narrow" />
@@ -731,7 +718,7 @@ export function DocWorkspace({ initialDoc, initialComments }: Props) {
 }
 
 function SaveIndicator({ status, uploads, onConflict }: { status: SaveStatus; uploads: number; onConflict: () => void }) {
-  // Where documents live: the account (Supabase or the ELUM API), or only this browser in preview mode.
+  // Where documents live: the account (Supabase or the ELUM API), or only this browser when Write runs unconnected for development.
   const local = api.mode === 'local';
   if (uploads > 0 || status === 'pending' || status === 'saving') {
     return (
@@ -745,23 +732,23 @@ function SaveIndicator({ status, uploads, onConflict }: { status: SaveStatus; up
     case 'error':
       return (
         <span className="save-status" data-tone="error" role="status">
-          <CloudOff size={15} strokeWidth={1.75} /> <span className="save-status__label">Not saved yet. Trying again</span>
+          <OfflineIcon size={15} strokeWidth={1.75} /> <span className="save-status__label">Not saved yet. Trying again</span>
         </span>
       );
     case 'conflict':
       return (
         <button type="button" className="save-status save-status--button" data-tone="error" onClick={onConflict}>
-          <TriangleAlert size={15} strokeWidth={1.75} /> <span className="save-status__label">Changed elsewhere</span>
+          <WarningIcon size={15} strokeWidth={1.75} /> <span className="save-status__label">Changed elsewhere</span>
         </button>
       );
     default:
       return local ? (
-        <span className="save-status" data-tone="local" role="status" data-tip="Preview mode: documents stay in this browser until Write is connected to its server">
+        <span className="save-status" data-tone="local" role="status" data-tip="This copy of Write is not connected to ELUM, so documents stay in this browser">
           <HardDrive size={15} strokeWidth={1.75} /> <span className="save-status__label">Saved in this browser only</span>
         </span>
       ) : (
         <span className="save-status" role="status" data-tip="Saved to your ELUM account, so it is on every device you sign in to">
-          <CloudCheck size={15} strokeWidth={1.75} /> <span className="save-status__label">Saved to your account</span>
+          <SavedIcon size={15} strokeWidth={1.75} /> <span className="save-status__label">Saved to your account</span>
         </span>
       );
   }

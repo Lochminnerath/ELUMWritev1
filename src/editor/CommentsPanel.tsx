@@ -1,6 +1,7 @@
 import type { Editor } from '@tiptap/core';
 import { useEditorState } from '@tiptap/react';
-import { Check, EllipsisVertical, MessageSquare, RotateCcw, Trash2, X } from 'lucide-react';
+import { Check, EllipsisVertical, MessageSquare, X } from 'lucide-react';
+import { DeleteIcon, RestoreIcon } from '../components/icons/ElumIcons';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent } from 'react';
 import type { CommentThread, PublicUser } from '../api';
 import { Avatar } from '../components/Avatar';
@@ -322,7 +323,7 @@ function ThreadCard({ thread, active, orphan, showQuote, cardRef, style, me, isO
           <Menu
             label="Comment actions"
             placement="bottom-end"
-            items={[{ label: 'Delete thread', icon: <Trash2 size={16} strokeWidth={1.75} />, danger: true, onSelect: () => void onDelete(thread.id) }]}
+            items={[{ label: 'Delete thread', icon: <DeleteIcon size={16} strokeWidth={1.75} />, danger: true, onSelect: () => void onDelete(thread.id) }]}
             trigger={(p) => (
               <button type="button" className="icon-btn" aria-label="More comment actions" {...p} onClick={(e) => (e.stopPropagation(), p.onClick())}>
                 <EllipsisVertical size={18} strokeWidth={1.75} />
@@ -367,7 +368,7 @@ function ThreadCard({ thread, active, orphan, showQuote, cardRef, style, me, isO
                 void onResolve(thread.id, false);
               }}
             >
-              <RotateCcw size={14} strokeWidth={1.75} /> Reopen
+              <RestoreIcon size={14} strokeWidth={1.75} /> Reopen
             </button>
           )}
         </footer>

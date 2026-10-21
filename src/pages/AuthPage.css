@@ -245,14 +245,6 @@
 .auth__switch a:hover {
   text-decoration: underline;
 }
-.auth__local {
-  margin: var(--space-4) 0 0;
-  padding: 12px 14px;
-  border-radius: var(--radius-sm);
-  background: var(--surface-glass);
-  font-size: 13px;
-  line-height: 20px;
-}
 
 @media (max-width: 860px) {
   .auth {
@@ -264,4 +256,65 @@
   .auth__main {
     padding: var(--space-4);
   }
+}
+
+.handle-input {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.handle-input .input {
+  padding-right: 190px;
+}
+.handle-input__domain {
+  position: absolute;
+  right: 14px;
+  color: var(--ink-muted);
+  font-size: 14px;
+  pointer-events: none;
+  max-width: 60%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.handle-input[data-state='ok'] .input {
+  border-color: var(--write-deep);
+}
+.handle-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--ink-muted);
+}
+.handle-status[data-state='ok'] {
+  color: var(--write-deep);
+  font-weight: 600;
+}
+.handle-status[data-state='bad'] {
+  color: var(--danger);
+}
+.auth__warning {
+  display: flex;
+  gap: 6px;
+  align-items: flex-start;
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--ink-muted);
+}
+.auth__warning svg {
+  flex: none;
+  margin-top: 2px;
+}
+.auth__warning[data-empty] {
+  color: var(--danger);
+}
+
+.auth__notice p,
+.auth__error p {
+  margin: 0;
+}
+.auth__notice .elum-btn {
+  margin-top: 10px;
 }

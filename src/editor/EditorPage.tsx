@@ -1,4 +1,4 @@
-import { Lock } from 'lucide-react';
+import { PrivateIcon } from '../components/icons/ElumIcons';
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router';
 import { api, errorMessage, isApiError, type CommentThread, type DocumentRecord } from '../api';
@@ -8,6 +8,7 @@ import { DocIcon } from '../components/Brand';
 import { FullPageLoader } from '../components/Loader';
 import { DocWorkspace } from './DocWorkspace';
 import './editor.css';
+import { useFavicon } from '../lib/favicon';
 
 type State =
   | { status: 'loading' }
@@ -16,6 +17,7 @@ type State =
 
 export default function EditorPage() {
   const { docId = '' } = useParams();
+  useFavicon('/favicons/doc.svg');
   const [state, setState] = useState<State>({ status: 'loading' });
 
   useEffect(() => {
@@ -47,7 +49,7 @@ export function DocumentProblem({ kind, message }: { kind: 'forbidden' | 'not_fo
   return (
     <div className="doc-problem">
       <div className="empty-state">
-        {kind === 'forbidden' ? <Lock size={44} strokeWidth={1.5} color="var(--write-deep)" /> : <DocIcon size={72} />}
+        {kind === 'forbidden' ? <PrivateIcon size={44} strokeWidth={1.5} color="var(--write-deep)" /> : <DocIcon size={72} />}
         <h2>{kind === 'forbidden' ? 'You need access' : kind === 'not_found' ? 'This document is not here' : 'We could not open this document'}</h2>
         <p>{message}</p>
         {kind === 'forbidden' && <p className="muted">You are signed in as {me.email}.</p>}

@@ -27,8 +27,9 @@ import type {
   SignUpInput,
   User,
 } from '../types';
-import { checkSignUp, cleanComment, cleanName, cleanTitle } from '../validation';
+import { checkSignUp, cleanComment, cleanName, cleanTitle, handleProblem, isEmail, MIN_PASSWORD } from '../validation';
 import { welcomeDocument } from '../welcome';
+import { PENDING_ROLE, tokenRole } from '../../security/approvals';
 
 /**
  * The ELUM API on Supabase: Auth for accounts, Postgres (with the row level
@@ -119,6 +120,35 @@ interface RawError {
 const FORMER_MEMBER: PublicUser = { id: '', name: 'Former member', email: '', color: '#a3aac0' };
 const person = (p: PublicUser | null): PublicUser => p ?? FORMER_MEMBER;
 
+/** Where Type addresses live when the database cannot say (older databases). */
+const DEFAULT_TYPE_DOMAIN = 'type.elum.services';
+
+/** The error an edge function answered with, such as type-signup's "That name is taken." */
+async function functionError(error: unknown): Promise<ApiError> {
+  const context = (error as { context?: Response }).context;
+  if (context && typeof context.json === 'function') {
+    try {
+      const body = (await context.json()) as { error?: { code?: string; message?: string; details?: { field?: string } } };
+      const message = body.error?.message ?? 'Something went wrong. Please try again.';
+      switch (body.error?.code) {
+        case 'conflict':
+          return new ApiError('conflict', message, { field: 'handle' });
+        case 'invalid':
+          return new ApiError('invalid', message, body.error.details?.field ? { field: body.error.details.field } : undefined);
+        case 'rate_limited':
+          return new ApiError('rate_limited', message);
+        case 'forbidden':
+          return new ApiError('forbidden', message);
+        default:
+          return new ApiError('server', message);
+      }
+    } catch {
+      // Fall through.
+    }
+  }
+  return new ApiError('network', 'ELUM Type sign-up is not reachable. Check that the type-signup function is deployed.');
+}
+
 /** Translates Supabase errors into the app's error codes and plain messages. */
 export function toApiError(error: RawError | null | undefined, fallback = 'Something went wrong. Please try again.'): ApiError {
   const code = String(error?.code ?? '');
@@ -155,6 +185,7 @@ export class SupabaseApi implements ElumApi {
   readonly sb: SupabaseClient;
   private readonly unauthorizedHandlers = new Set<() => void>();
   private readonly signedUrls = new Map<string, { url: string; expires: number }>();
+  private linkProblem: string | null = null;
 
   constructor(url: string, anonKey: string, client?: SupabaseClient) {
     // With VITE_ELUM_COOKIE_DOMAIN set (such as .elum.services), the session lives in cookies on
@@ -170,6 +201,16 @@ export class SupabaseApi implements ElumApi {
           ...(cookieDomain ? { storageKey: 'elum-auth', storage: cookieStorage({ domain: cookieDomain, secure: location.protocol === 'https:' }) } : {}),
         },
       });
+    // A confirmation link that failed (expired, or already used) lands here with the reason in the
+    // address. Keep it to show on the sign-in page; the address is cleaned up by the router.
+    if (typeof location !== 'undefined' && /error_description=/.test(location.hash + location.search)) {
+      const params = new URLSearchParams(location.hash.slice(1) || location.search.slice(1));
+      const code = params.get('error_code');
+      this.linkProblem =
+        code === 'otp_expired'
+          ? 'That confirmation link has expired or was already used. Sign in, or send yourself a new link.'
+          : params.get('error_description')?.replace(/\+/g, ' ') ?? 'That link did not work. Try signing in.';
+    }
     this.sb.auth.onAuthStateChange((event) => {
       // Covers expiry, revocation and signing out in another tab.
       if (event === 'SIGNED_OUT') {
@@ -265,17 +306,17 @@ export class SupabaseApi implements ElumApi {
     try {
       return await this.sessionFor(data.session);
     } catch (e) {
-      if (e instanceof ApiError && (e.code === 'unauthorized' || e.code === 'not_found')) return null;
+      if (e instanceof ApiError && e.code === 'unauthorized') return null;
       throw e;
     }
   }
 
   async signUp(input: SignUpInput): Promise<Session> {
+    if (input.accountType === 'type') return this.signUpType(input);
     const { name, email, password } = checkSignUp(input);
     const { data, error } = await this.sb.auth.signUp({
       email,
       password,
-      // Type accounts come with ELUM's own inbox, which is not built yet; everyone signs up with their own email.
       options: { data: { name, account_type: 'external' }, emailRedirectTo: `${window.location.origin}/` },
     });
     if (error) {
@@ -283,6 +324,12 @@ export class SupabaseApi implements ElumApi {
         throw new ApiError('email_taken', 'An account with this email already exists. Sign in instead.', { field: 'email' });
       }
       if (error.code === 'weak_password') throw new ApiError('invalid', error.message, { field: 'password' });
+      // Supabase keeps the account only once the confirmation email is sent. Its built-in sender
+      // only reaches the project's own team, so without an SMTP sender every other sign-up is dropped.
+      if (/sending.*email|email.*send/i.test(error.message ?? '') || error.code === 'unexpected_failure') {
+        throw new ApiError('server', 'We could not send your confirmation email, so the account was not created. ELUM email is not set up yet (Supabase > Authentication > Emails > SMTP Settings).');
+      }
+      if (error.code === 'signup_disabled') throw new ApiError('forbidden', 'New accounts are switched off right now (Supabase > Authentication > Sign In / Providers).');
       if (error.code === 'email_address_invalid') throw new ApiError('invalid', 'Enter a valid email address.', { field: 'email' });
       if (error.code === 'over_email_send_rate_limit' || error.status === 429) {
         throw new ApiError('invalid', 'Too many attempts. Wait a minute and try again.');
@@ -296,8 +343,68 @@ export class SupabaseApi implements ElumApi {
     return this.sessionFor(data.session);
   }
 
+  /**
+   * A new ELUM Type address. Only the server may create one (it is verified by construction and
+   * sets account_type and handle), so the type-signup function makes the account; then we sign in.
+   */
+  private async signUpType(input: SignUpInput): Promise<Session> {
+    const name = cleanName(input.name);
+    const handle = (input.handle ?? '').trim().toLowerCase();
+    const problem = handleProblem(handle);
+    if (problem) throw new ApiError('invalid', problem, { field: 'handle' });
+    if (input.password.length < MIN_PASSWORD) {
+      throw new ApiError('invalid', `Use at least ${MIN_PASSWORD} characters for your password.`, { field: 'password' });
+    }
+    const recoveryEmail = input.recoveryEmail?.trim() || undefined;
+    if (recoveryEmail && !isEmail(recoveryEmail)) {
+      throw new ApiError('invalid', 'Enter a valid recovery email, or leave it empty.', { field: 'recoveryEmail' });
+    }
+    const { data, error } = await this.sb.functions.invoke<{ error?: RawError }>('type-signup', {
+      body: { handle, name, password: input.password, recoveryEmail },
+    });
+    if (error) throw await functionError(error);
+    if (data?.error) throw toApiError(data.error);
+    return this.signIn({ email: handle, password: input.password });
+  }
+
+  private domainLookup: Promise<string> | null = null;
+
+  /** The domain Type addresses live on, from the database (elum.config type_domain). */
+  typeDomain(): Promise<string> {
+    this.domainLookup ??= Promise.resolve(this.sb.rpc('type_domain')).then(
+      ({ data }) => (typeof data === 'string' && data ? data : DEFAULT_TYPE_DOMAIN),
+      () => DEFAULT_TYPE_DOMAIN,
+    );
+    return this.domainLookup;
+  }
+
+  async handleAvailable(handle: string): Promise<boolean> {
+    if (handleProblem(handle)) return false;
+    const { data, error } = await this.sb.rpc('elum_handle_available', { p_handle: handle.trim().toLowerCase() });
+    if (error) throw toApiError(error);
+    return data === true;
+  }
+
+  /** Why the confirmation link that opened this page did not work, once. */
+  takeLinkProblem(): string | null {
+    const problem = this.linkProblem;
+    this.linkProblem = null;
+    return problem;
+  }
+
+  async resendConfirmation(email: string): Promise<void> {
+    const { error } = await this.sb.auth.resend({ type: 'signup', email: email.trim().toLowerCase(), options: { emailRedirectTo: `${window.location.origin}/` } });
+    if (error) {
+      if (error.status === 429) throw new ApiError('rate_limited', 'A link was sent a moment ago. Wait a minute and try again.');
+      throw toApiError(error);
+    }
+  }
+
   async signIn(input: SignInInput): Promise<Session> {
-    const { data, error } = await this.sb.auth.signInWithPassword({ email: input.email.trim(), password: input.password });
+    // A Type address can be typed as just its name.
+    const login = input.email.trim().toLowerCase();
+    const email = login.includes('@') ? login : `${login}@${await this.typeDomain()}`;
+    const { data, error } = await this.sb.auth.signInWithPassword({ email, password: input.password });
     if (error) {
       if (error.code === 'email_not_confirmed') {
         throw new ApiError('confirm_email', 'Confirm your email first. We sent you a link when you signed up.');
@@ -624,9 +731,11 @@ export class SupabaseApi implements ElumApi {
   }
 
   private async sessionFor(session: AuthSession): Promise<Session> {
-    const profile = must(
-      await this.sb.from('profiles').select(PROFILE).eq('id', session.user.id).single<ProfileRow>(),
-    );
+    // Waiting for approval from another device (ELUM Account > Security): nothing else answers it.
+    if (tokenRole(session.access_token) === PENDING_ROLE) {
+      throw new ApiError('approval_required', 'Approve this sign-in on a device you are already signed in to.');
+    }
+    const profile = await this.profileFor(session.user.id);
     if (!profile.welcomed) await this.welcome(profile);
     // Tell the platform this account uses Write. Optional: older databases lack the function.
     void this.sb.rpc('elum_join_service', { p_service: 'write' }).then(() => undefined, () => undefined);
@@ -635,6 +744,26 @@ export class SupabaseApi implements ElumApi {
       user: { ...toUser(profile), pictureUrl: await this.pictureUrl(profile.id) },
       expiresAt: new Date((session.expires_at ?? 0) * 1000).toISOString(),
     };
+  }
+
+  /**
+   * The person's profile. An account Supabase Auth knows but the profile trigger missed (made
+   * before it existed, or while migrations were re-run) gets one made now, so it can sign in.
+   */
+  private async profileFor(id: string): Promise<ProfileRow> {
+    const load = () => this.sb.from('profiles').select(PROFILE).eq('id', id).maybeSingle<ProfileRow>();
+    let { data, error } = await load();
+    if (error) throw toApiError(error);
+    if (!data) {
+      const made = await this.sb.rpc('elum_ensure_profile');
+      if (made.error) {
+        throw new ApiError('server', 'Your account is missing its profile. Run the latest database migrations (profile_for_every_account), then sign in again.');
+      }
+      ({ data, error } = await load());
+      if (error) throw toApiError(error);
+      if (!data) throw new ApiError('server', 'Your account is missing its profile. Sign in again in a moment.');
+    }
+    return data;
   }
 
   /** Every new account gets the welcome document, once. */

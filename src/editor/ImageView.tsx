@@ -1,5 +1,6 @@
 import { NodeViewWrapper, type ReactNodeViewProps } from '@tiptap/react';
-import { AlignCenter, AlignLeft, AlignRight, ImageOff, Trash2 } from 'lucide-react';
+import { AlignCenter, AlignLeft, AlignRight, ImageOff } from 'lucide-react';
+import { DeleteIcon } from '../components/icons/ElumIcons';
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import type { ElumImageOptions, ImageAlign, ImageAttrs, ImageWrap } from './extensions/ElumImage';
 
@@ -222,7 +223,7 @@ export function ImageView({ node, updateAttributes, selected, editor, extension,
                   Alt text
                 </button>
                 <button type="button" className="icon-btn" aria-label="Delete image" data-tip="Delete" onClick={() => deleteNode()}>
-                  <Trash2 {...ICON} />
+                  <DeleteIcon {...ICON} />
                 </button>
               </span>
             </>

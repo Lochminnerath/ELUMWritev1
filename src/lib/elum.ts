@@ -8,15 +8,34 @@ import { api } from '../api';
 const env = import.meta.env;
 const clean = (v: string | undefined) => (v?.trim() ? v.trim().replace(/\/+$/, '') : null);
 
-/** ELUM Account. Set VITE_ELUM_ACCOUNT_URL to sign in through it; unset, Write keeps its own sign-in. */
-export const ACCOUNT_URL = clean(env.VITE_ELUM_ACCOUNT_URL);
+/**
+ * ELUM Account, where every ELUM app signs in, so one sign-in covers them all. Set
+ * VITE_ELUM_ACCOUNT_URL to point at another ELUM Account, or to off for Write's own sign-in only.
+ */
+const accountSetting = clean(env.VITE_ELUM_ACCOUNT_URL);
+export const ACCOUNT_URL = accountSetting === 'off' ? null : (accountSetting ?? 'https://elumaccounts.netlify.app');
 export const WRITE_URL = clean(env.VITE_ELUM_WRITE_URL) ?? 'https://elumwrite.netlify.app';
 export const TYPE_URL = clean(env.VITE_ELUM_TYPE_URL) ?? 'https://elumtype.netlify.app';
+/** Where ELUM Account lives, for the launcher, even when sign-in does not go through it. */
+export const ACCOUNT_HOME = ACCOUNT_URL ?? 'https://elumaccounts.netlify.app';
+export const MAKE_URL = clean(env.VITE_ELUM_MAKE_URL) ?? 'https://elummake.netlify.app';
+export const BROWSE_URL = clean(env.VITE_ELUM_BROWSE_URL) ?? 'https://elumbrowse.netlify.app';
+export const STORE_URL = clean(env.VITE_ELUM_STORE_URL) ?? 'https://elumstore.netlify.app';
 
-/** Signing in goes through ELUM Account when it is configured and Supabase is connected. */
-export const accountsSignIn = !!ACCOUNT_URL && api.mode === 'remote' && !!api.completeHandoff;
+const ELUM_ORIGINS = [ACCOUNT_URL, WRITE_URL, TYPE_URL, MAKE_URL, BROWSE_URL, STORE_URL].filter(Boolean).map((u) => new URL(u!).origin);
 
-const ELUM_ORIGINS = [ACCOUNT_URL, WRITE_URL, TYPE_URL].filter(Boolean).map((u) => new URL(u!).origin);
+/**
+ * Where ELUM Account will hand a sign-in over: each app's own site, elum.services, and this
+ * computer while developing. Anywhere else, such as a Netlify deploy preview, the app signs in on
+ * its own pages, because ELUM Account refuses to send sign-ins to addresses it does not know.
+ */
+export function accountCanSignInAt(origin: string): boolean {
+  const { hostname } = new URL(origin);
+  return ELUM_ORIGINS.includes(origin) || hostname === 'elum.services' || hostname.endsWith('.elum.services') || hostname === 'localhost' || hostname === '127.0.0.1';
+}
+
+/** Signing in goes through ELUM Account when it is set up, Supabase is connected, and Account can sign people in here. */
+export const accountsSignIn = !!ACCOUNT_URL && api.mode === 'remote' && !!api.completeHandoff && accountCanSignInAt(window.location.origin);
 const TRIED = 'elum.handoff.tried';
 
 /** Sends a signed-out visitor to ELUM Account, which sends them back signed in to `next`. */

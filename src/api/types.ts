@@ -35,13 +35,19 @@ export interface Session {
 
 export interface SignUpInput {
   name: string;
+  /** Their own email, for `external` accounts. Unused for Type accounts. */
   email: string;
   password: string;
-  /** Defaults to `external`. Type accounts are not available yet. */
+  /** Defaults to `external`. `type` creates an ELUM Type address (needs the ELUM platform). */
   accountType?: AccountType;
+  /** Type accounts: the name before @<type domain>. */
+  handle?: string;
+  /** Type accounts: an outside address for getting back in after a forgotten password. */
+  recoveryEmail?: string;
 }
 
 export interface SignInInput {
+  /** An email, an ELUM Type address, or just the name before @<type domain>. */
   email: string;
   password: string;
 }
