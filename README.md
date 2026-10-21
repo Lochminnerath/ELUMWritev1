@@ -4,21 +4,15 @@
 
 # ELUM Write
 
-Documents and writing, from the ELUM family. Write, format and share documents
-with the people you work with. Built by people. Runs without AI.
+Elum Internet Services provides a variety of services including Write. This software connects with the Elum network to provide a document service. This includes writing and customization as well as group collaboration with other users. The doc program saves your every word and grammar helps your ideas stay together. Add colors, sizes, templates, and images for even more customization. This software excludes any and all Artificial Intelligence (AI) to allow you to write free from any interference. Give it a try today at https://elumwrite.netlify.app with more service updates to come. 
 
-This repository replaces the old HORIZON project. It is a React app that runs
-today with a built-in local API, and switches to the ELUM API with one setting
-when that is ready.
+Elum Internet Services owns its respective software. You agree to the terms of service. No digital licenses are given and Elum Internet Services reserves the right to revoke software access at any time. 
 
 ## Run it
 
 You need Node.js 20 or newer.
 
-```sh
-npm install
-npm run dev        # http://localhost:5173
-```
+## Currently Available 
 
 Without any settings it runs unconnected, for development only, with data kept in the browser
 (Netlify builds refuse to run that way). To use Supabase, follow [supabase/README.md](supabase/README.md).
@@ -100,7 +94,7 @@ service, live.
 
 **Spelling.** Write checks spelling itself, so it is the same on every device and
 browser: Hunspell dictionaries for English (US) and English (UK) run in a background
-worker ([nspell](https://github.com/wooorm/nspell)). Misspelled words get a wavy line;
+worker. Misspelled words get a wavy line;
 right-click one for suggestions, add it to your dictionary or ignore it, or work
 through them all in the Spelling panel. The dictionary, the language and the on/off
 switch are saved to your account. Code, links, web and email addresses, ACRONYMS and
@@ -127,10 +121,10 @@ sun button, or choose in the account menu. The choice is remembered.
 **Mobile.** Pages reflow to the screen width, the toolbar scrolls, and the
 comments panel becomes a drawer.
 
-**ELUM Account.** With `VITE_ELUM_ACCOUNT_URL` set (for example
+**ELUM Account.** With set (for example
 https://elumaccounts.netlify.app), signing in goes through ELUM Account, and
 the account menu opens it for your profile, picture, privacy and people.
-Every document has its own link (`/d/<id>`). Open one while signed out and
+Every document has its own link. Open one while signed out and
 ELUM Account brings you straight back to it, signed in; Write then opens it
 if you have access. How sign-in crosses sites is explained in ELUMAccountsV1
 `docs/SIGN-IN.md`.
