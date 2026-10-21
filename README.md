@@ -4,52 +4,17 @@
 
 # ELUM Write
 
-Documents and writing, from the ELUM family. Write, format and share documents
-with the people you work with. Built by people. Runs without AI.
+Elum Internet Services provides a variety of services including Write. This software connects with the Elum network to provide a document service. This includes writing and customization as well as group collaboration with other users. The doc program saves your every word and grammar helps your ideas stay together. Add colors, sizes, templates, and images for even more customization. This software excludes any and all Artificial Intelligence (AI) to allow you to write free from any interference. Give it a try today at https://elumwrite.netlify.app with more service updates to come. 
 
-This repository replaces the old HORIZON project. It is a React app that runs
-today with a built-in local API, and switches to the ELUM API with one setting
-when that is ready.
+Elum Internet Services owns its respective software. You agree to the terms of service. No digital licenses are given and Elum Internet Services reserves the right to revoke software access at any time. 
 
 ## Run it
 
 You need Node.js 20 or newer.
 
-```sh
-npm install
-npm run dev        # http://localhost:5173
-```
+## Currently Available 
 
-Without any settings it runs in preview mode, with data kept in the browser. To use
-Supabase, follow [supabase/README.md](supabase/README.md).
-
-Create an account, or sign in as one of the demo people (preview mode only):
-
-| Name | Email | Password |
-| --- | --- | --- |
-| Ada Okafor | ada@example.com | `write-demo` |
-| Jonah Reyes | jonah@example.com | `write-demo` |
-| Mira Lindqvist | mira@example.com | `write-demo` |
-| Theo Park | theo@example.com | `write-demo` |
-
-Share a document with one of them, then sign in as them to see the viewer,
-commenter or editor experience.
-
-| Script | What it does |
-| --- | --- |
-| `npm run dev` | Development server with hot reload |
-| `npm run build` | Type-check and build to `dist/` |
-| `npm run preview` | Serve the production build |
-| `npm run typecheck` | TypeScript only |
-| `npm test` | Unit tests (Vitest) |
-| `sh supabase/tests/run.sh` | Database permission checks (needs `psql`) |
-| `sh supabase/tests/integration.sh` | The Supabase client against the real schema (needs `psql` and `postgrest`) |
-
-## What Write does today
-
-**Accounts.** Sign up (with optional email confirmation on Supabase), sign in, sign out, edit your name. Pages behind sign-in
-redirect to it and bring you back afterwards. Signing out in one tab signs out
-every tab.
+**Accounts.** Sign up with either another mailing service or use Elum Type and create a new address, sign in, sign out, edit your name. 
 
 **Documents.** A home page with your documents and those shared with you, as a
 grid of page thumbnails or a list. Search, sort, rename, copy, delete, or
@@ -100,7 +65,7 @@ service, live.
 
 **Spelling.** Write checks spelling itself, so it is the same on every device and
 browser: Hunspell dictionaries for English (US) and English (UK) run in a background
-worker ([nspell](https://github.com/wooorm/nspell)). Misspelled words get a wavy line;
+worker. Misspelled words get a wavy line;
 right-click one for suggestions, add it to your dictionary or ignore it, or work
 through them all in the Spelling panel. The dictionary, the language and the on/off
 switch are saved to your account. Code, links, web and email addresses, ACRONYMS and
@@ -127,105 +92,10 @@ sun button, or choose in the account menu. The choice is remembered.
 **Mobile.** Pages reflow to the screen width, the toolbar scrolls, and the
 comments panel becomes a drawer.
 
-**ELUM Account.** With `VITE_ELUM_ACCOUNT_URL` set (for example
+**ELUM Account.** With set (for example
 https://elumaccounts.netlify.app), signing in goes through ELUM Account, and
 the account menu opens it for your profile, picture, privacy and people.
-Every document has its own link (`/d/<id>`). Open one while signed out and
+Every document has its own link. Open one while signed out and
 ELUM Account brings you straight back to it, signed in; Write then opens it
-if you have access. How sign-in crosses sites is explained in ELUMAccountsV1
-`docs/SIGN-IN.md`.
+if you have access. 
 
-## How it is built
-
-```
-src/
-  api/                 The data layer. The UI only ever talks to `api`.
-    client.ts          ElumApi: every call Write makes
-    types.ts           Shared data shapes
-    local/             LocalApi: the API running inside the browser (today)
-    http/HttpApi.ts    The same calls over HTTPS (when the ELUM API is live)
-    content.ts         Document helpers shared by both (previews, comment rules)
-    roles.ts           Viewer < commenter < editor < owner
-  auth/                Session state, sign-in redirects
-  preferences/         Settings saved with the account (colours, dictionary)
-  theme/               Light, dark and match-system
-  components/          Menus, popovers, dialogs, toasts, tooltips, avatars, logos
-  pages/               Sign in and sign up, documents home
-  editor/              The document editor (loaded only when a document opens)
-    extensions/        TipTap extensions: paragraph format, letter spacing, case,
-                       Tab keys, comments, images, permissions
-    toolbar/           The formatting dock: fonts, sizes, colours (own picker), links
-    spelling/          Spell check: worker, word finder, suggestions, menu
-    academic/          MLA, APA, Chicago, Harvard, IEEE: styles, citations, sources
-    SidePanels.tsx     The tool rail and its panels
-    fonts.ts           The font catalogue
-    DocWorkspace.tsx   Bar, rail, page, dock, comments, autosave
-  styles/              Brand tokens (from the ELUM brand kit) and base styles
-public/brand/          Logos, Write marks, document logo, loaders
-docs/API.md            The contract for the ELUM API
-docs/EMAIL.md          Email design, the list of emails, and how to install them
-docs/ELUM-PLATFORM.md  The shared platform for every ELUM service, and the ELUM Type handoff
-supabase/              Database migrations, tests, edge functions and email templates
-```
-
-The editor is [TipTap](https://tiptap.dev) on ProseMirror. Documents are
-stored as ProseMirror JSON; the schema is defined in `src/editor/extensions`.
-
-### Backends
-
-`src/api/index.ts` picks one at start-up:
-
-| Set in `.env.local` | Backend |
-| --- | --- |
-| `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` | **Supabase**: Auth, Postgres with row level security, Storage. Setup in [supabase/README.md](supabase/README.md). |
-| `VITE_ELUM_API_URL` | A custom ELUM API over HTTPS, following [docs/API.md](docs/API.md). |
-| neither | Preview mode: everything stays in this browser. |
-
-All three implement the same `ElumApi` interface and the same rules, so the UI
-never changes. In preview mode, records live in `localStorage`
-(`elum.local.v1.*`) and images in IndexedDB (`elum-write-assets`); passwords are
-stored only as salted PBKDF2 hashes even there. Clearing site data resets it.
-
-### Fonts
-
-`src/editor/fonts.ts` is the catalogue: 22 fonts today (the ELUM brand faces,
-a range of Google Fonts, and common system fonts). To add the ELUM typefaces,
-put each font's files and an `@font-face` stylesheet in `public/fonts/elum/`
-and add an entry:
-
-```ts
-{
-  id: 'elum-serif-text',
-  name: 'ELUM Serif Text',
-  category: 'serif',
-  stack: '"ELUM Serif Text", Georgia, serif',
-  source: { kind: 'elum', css: '/fonts/elum/elum-serif-text.css' },
-  collection: 'elum',
-}
-```
-
-The picker groups ELUM fonts first. Font files only download once a document
-uses them. Documents store the CSS font stack, so they stay readable if a font
-is ever retired.
-
-### Brand
-
-Colours, type, radii and shadows come from the ELUM brand kit
-(`src/styles/tokens.css`). Write uses apricot (`--write`, `--write-deep`) for
-active states, the comment lens and loaders, and ELUM blue for primary actions,
-following the brand book. Icons are Lucide at a 1.75px stroke, matching the
-rounded monoline guidance. The favicon is the Write mark: the flat mark for
-small sizes (`favicon.ico`, `favicon.svg`) and the app icon for touch and
-install icons.
-
-## What comes next
-
-- **Real-time co-editing** once the API has a live channel (Yjs on the
-  existing schema). Today, two people saving the same version get a clear
-  choice instead of losing work.
-- **Page layout:** true page breaks, page size and margins, headers, footers and page numbers.
-- **Tables**, footnotes, a table of contents.
-- **Version history** and suggestions (track changes).
-- **Exports** to .docx and PDF without the print dialog.
-- **The 55 ELUM fonts**, dropped into the catalogue above.
-- **Notifications** when someone shares a document or replies to a comment.
