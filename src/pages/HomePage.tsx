@@ -103,7 +103,7 @@ export function HomePage() {
       const doc = await api.createDocument(template ? { title: template.title, content: template.content() } : { content: emptyDocument() });
       navigate(`/d/${doc.id}`);
     } catch (e) {
-      toast(errorMessage(e), { tone: 'error' });
+      toast(errorMessage(e), { tone: 'error', cause: e, code: 'documents-failed' });
       setCreating(false);
     }
   };
@@ -114,7 +114,7 @@ export function HomePage() {
       toast(`Made a copy of “${doc.title}”`, { tone: 'success', action: { label: 'Open', onClick: () => navigate(`/d/${copy.id}`) } });
       void load();
     } catch (e) {
-      toast(errorMessage(e), { tone: 'error' });
+      toast(errorMessage(e), { tone: 'error', cause: e, code: 'documents-failed' });
     }
   };
 
@@ -124,7 +124,7 @@ export function HomePage() {
       toast(`Removed “${doc.title}” from your documents`);
       void load();
     } catch (e) {
-      toast(errorMessage(e), { tone: 'error' });
+      toast(errorMessage(e), { tone: 'error', cause: e, code: 'documents-failed' });
     }
   };
 
@@ -397,7 +397,7 @@ export function HomePage() {
                   toast(`Deleted “${doc.title}”`);
                   void load();
                 } catch (e) {
-                  toast(errorMessage(e), { tone: 'error' });
+                  toast(errorMessage(e), { tone: 'error', cause: e, code: 'documents-failed' });
                 }
               }}
             >
