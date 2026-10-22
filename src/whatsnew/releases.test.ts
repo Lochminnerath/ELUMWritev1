@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { RELEASES, tourSteps, unseenReleases, type Release } from './releases';
+import { RELEASES, releasesToShow, tourSteps, unseenReleases, type Release } from './releases';
 
 const r = (id: string): Release => ({ id, date: id, title: id, intro: 'i', features: [{ title: 't', text: 'x', art: 'spark' }] });
 const list = [r('c'), r('b'), r('a')];
@@ -32,5 +32,25 @@ describe("what's new", () => {
     for (const release of RELEASES) expect(release.features.length).toBeGreaterThan(0);
     const keys = tourSteps(RELEASES).map((s) => s.key);
     expect(new Set(keys).size).toBe(keys.length);
+  });
+});
+
+describe('releasesToShow', () => {
+  it('shows nothing to someone brand new, and records the latest quietly', () => {
+    expect(releasesToShow(list, null, null)).toEqual({ show: [], record: 'c' });
+  });
+
+  it('follows the account across devices, even without anything in this browser', () => {
+    expect(releasesToShow(list, 'c', null)).toEqual({ show: [], record: null });
+    expect(releasesToShow(list, 'b', null).show.map((x) => x.id)).toEqual(['c']);
+  });
+
+  it('prefers the account over this browser', () => {
+    expect(releasesToShow(list, 'c', 'a').show).toEqual([]);
+  });
+
+  it('falls back to this browser and copies it to the account', () => {
+    expect(releasesToShow(list, null, 'c')).toEqual({ show: [], record: 'c' });
+    expect(releasesToShow(list, null, 'a').show.map((x) => x.id)).toEqual(['c', 'b']);
   });
 });

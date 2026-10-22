@@ -2,7 +2,8 @@ import { ArrowLeft, ArrowRight, X } from 'lucide-react';
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { useAuth } from '../auth/AuthProvider';
 import { WriteMark } from '../components/Brand';
-import { APP_NAME, RELEASES, tourSteps, unseenReleases, type Step } from './releases';
+import { api } from '../api';
+import { APP_NAME, RELEASES, releasesToShow, tourSteps, type Step } from './releases';
 import { Scene } from './scenes';
 import './WhatsNew.css';
 
@@ -18,12 +19,14 @@ function lastSeen(): string | null {
   }
 }
 
-function markSeen() {
+function markSeen(id = RELEASES[0]?.id, account = true) {
+  if (!id) return;
   try {
-    if (RELEASES[0]) localStorage.setItem(SEEN_KEY, RELEASES[0].id);
+    localStorage.setItem(SEEN_KEY, id);
   } catch {
-    // Without storage the tour shows again next time, which is harmless.
+    // The account still remembers it.
   }
+  if (account) void api.setWhatsNewSeen?.(id).catch(() => undefined);
 }
 
 /** Opens the tour of every release, from a menu. */
@@ -38,8 +41,17 @@ export function WhatsNew() {
 
   useEffect(() => {
     if (status !== 'signed-in') return;
-    const unseen = unseenReleases(RELEASES, lastSeen());
-    if (unseen.length) setSteps(tourSteps(unseen));
+    let live = true;
+    void (async () => {
+      const account = api.whatsNewSeen ? await api.whatsNewSeen().catch(() => null) : null;
+      if (!live) return;
+      const { show, record } = releasesToShow(RELEASES, account, lastSeen());
+      if (show.length) setSteps(tourSteps(show));
+      else if (record) markSeen(record, !!api.whatsNewSeen);
+    })();
+    return () => {
+      live = false;
+    };
   }, [status]);
 
   useEffect(() => {
