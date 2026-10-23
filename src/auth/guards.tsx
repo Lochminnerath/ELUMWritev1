@@ -15,7 +15,7 @@ export function RequireAuth({ children }: { children: ReactNode }) {
     const next = location.pathname + location.search;
     // One sign-in for every ELUM app: ELUM Account sends people straight back, signed in,
     // to the same document (/d/<id>).
-    if (accountsSignIn && signInThroughAccount(next)) return <FullPageLoader brand label="Signing you in" />;
+    if (accountsSignIn && signInThroughAccount(next, true)) return <FullPageLoader brand label="Signing you in" />;
     return <Navigate to={next === '/' ? '/signin' : `/signin?next=${encodeURIComponent(next)}`} replace />;
   }
   return <>{children}</>;

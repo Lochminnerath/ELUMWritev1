@@ -4,7 +4,7 @@
 
 # ELUM Write
 
-Elum Internet Services provides a variety of services including Write. This software connects with the Elum network to provide a document service. This includes writing and customization as well as group collaboration with other users. The doc program saves your every word and grammar helps your ideas stay together. Add colors, sizes, templates, and images for even more customization. This software excludes any and all Artificial Intelligence (AI) to allow you to write free from any interference. Give it a try today at https://elumwrite.netlify.app with more service updates to come. 
+Elum Internet Services provides a variety of services including Write. This software connects with the Elum network to provide a document service. This includes writing and customization as well as group collaboration with other users. The doc program saves your every word and grammar helps your ideas stay together. Add colors, sizes, templates, and images for even more customization. This software excludes any and all Artificial Intelligence (AI) to allow you to write free from any interference. Give it a try today at https://writebyelum.netlify.app with more service updates to come. 
 
 Elum Internet Services owns its respective software. You agree to the terms of service. No digital licenses are given and Elum Internet Services reserves the right to revoke software access at any time. 
 
@@ -122,7 +122,7 @@ sun button, or choose in the account menu. The choice is remembered.
 comments panel becomes a drawer.
 
 **ELUM Account.** With set (for example
-https://elumaccounts.netlify.app), signing in goes through ELUM Account, and
+https://accountsbyelum.netlify.app), signing in goes through ELUM Account, and
 the account menu opens it for your profile, picture, privacy and people.
 Every document has its own link. Open one while signed out and
 ELUM Account brings you straight back to it, signed in; Write then opens it
