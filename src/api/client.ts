@@ -44,6 +44,10 @@ export interface ElumApi {
   updatePreferences(patch: Partial<Preferences>): Promise<Preferences>;
   /** Called when the server rejects the session (expired or revoked). Returns an unsubscribe function. */
   onUnauthorized(handler: () => void): () => void;
+  /** The last What's new release this account has seen, so it follows the person between devices. Only on Supabase. */
+  whatsNewSeen?(): Promise<string | null>;
+  /** Remembers the last What's new release seen on the account. */
+  setWhatsNewSeen?(id: string): Promise<void>;
 
   // Signing in across ELUM apps through ELUM Account. Only on the platform backend (Supabase).
   /** A one-time sign-in for another ELUM app (account-handoff): where to send the browser. */

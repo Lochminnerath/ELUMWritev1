@@ -29,6 +29,24 @@ export const APP_NAME = 'Write';
 
 export const RELEASES: Release[] = [
   {
+    id: '2026-10-22-templates',
+    date: '22 October 2026',
+    title: 'More ways to start',
+    intro: 'Eleven new templates, and a smoother feel on phones.',
+    features: [
+      {
+        title: 'Eleven new templates',
+        text: 'Start a resume, cover letter, meeting agenda, essay, lesson plan, recipe, invoice, newsletter, weekly planner, trip itinerary or thank-you letter from Start from.',
+        art: 'layers',
+      },
+      {
+        title: 'Easier on your phone',
+        text: 'Tapping a field on an iPhone no longer zooms the page, and documents settle in gently while they load.',
+        art: 'devices',
+      },
+    ],
+  },
+  {
     id: '2026-10-19-symbols',
     date: '19 October 2026',
     title: 'Symbols, redrawn',
@@ -119,6 +137,22 @@ export function unseenReleases(releases: Release[], lastSeen: string | null): Re
   if (!releases.length) return [];
   const at = lastSeen ? releases.findIndex((r) => r.id === lastSeen) : -1;
   return at === -1 ? releases.slice(0, 1) : releases.slice(0, at);
+}
+
+/**
+ * What to show when Write opens. The account's record wins over this browser's, so the tour
+ * does not come back on every new device. Someone with no record at all is new: they see
+ * nothing, and the latest release is recorded quietly so only later updates are shown.
+ */
+export function releasesToShow(
+  releases: Release[],
+  account: string | null | undefined,
+  local: string | null | undefined,
+): { show: Release[]; record: string | null } {
+  const latest = releases[0]?.id ?? null;
+  const seen = account || local || null;
+  if (!seen) return { show: [], record: latest };
+  return { show: unseenReleases(releases, seen), record: account === latest ? null : latest };
 }
 
 export interface Step {

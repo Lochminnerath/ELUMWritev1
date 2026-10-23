@@ -422,6 +422,17 @@ export class SupabaseApi implements ElumApi {
     await this.sb.auth.signOut();
   }
 
+  async whatsNewSeen(): Promise<string | null> {
+    const { data } = await this.sb.auth.getSession();
+    const seen = data.session?.user.user_metadata?.whatsnew_write;
+    return typeof seen === 'string' ? seen : null;
+  }
+
+  async setWhatsNewSeen(id: string): Promise<void> {
+    const { error } = await this.sb.auth.updateUser({ data: { whatsnew_write: id } });
+    if (error) throw error;
+  }
+
   async updateProfile(input: { name: string }): Promise<User> {
     const me = await this.me();
     const row = must(

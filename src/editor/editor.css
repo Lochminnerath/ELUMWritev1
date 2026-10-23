@@ -1856,3 +1856,28 @@
     outline: none;
   }
 }
+
+/* Opening a document: the workspace fades in and the page rises gently into place. */
+.workspace {
+  animation: workspace-in 280ms var(--ease) both;
+}
+.workspace .page {
+  animation: page-rise 480ms var(--ease) 60ms both;
+}
+@keyframes workspace-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes page-rise {
+  from {
+    opacity: 0;
+    translate: 0 14px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .workspace,
+  .workspace .page {
+    animation: none !important;
+  }
+}

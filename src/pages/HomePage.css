@@ -512,3 +512,62 @@
     display: none;
   }
 }
+
+/* ---- Motion: cards settle in one after another, and a soft shimmer while loading ---- */
+.doc-grid:not(.doc-grid--loading) > .doc-card {
+  animation: card-in 420ms var(--ease) both;
+  animation-delay: calc(var(--i, 0) * 40ms);
+}
+@keyframes card-in {
+  from {
+    opacity: 0;
+    translate: 0 10px;
+    scale: 0.985;
+  }
+}
+.doc-card--skeleton {
+  pointer-events: none;
+}
+.skeleton {
+  display: block;
+  border-radius: 6px;
+  background: linear-gradient(90deg, var(--surface-glass) 0%, var(--write-mist) 45%, var(--surface-glass) 90%) 0 0 / 220% 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+}
+.skeleton--thumb {
+  height: 180px;
+  border-radius: 0;
+  border-bottom: 1px solid var(--hairline);
+}
+.skeleton--line {
+  height: 12px;
+  width: 80%;
+}
+.skeleton--short {
+  width: 50%;
+}
+@keyframes shimmer {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -120% 0;
+  }
+}
+.home__docs {
+  animation: page-in 360ms var(--ease) both;
+}
+@keyframes page-in {
+  from {
+    opacity: 0;
+    translate: 0 6px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .doc-grid > .doc-card,
+  .home__docs,
+  .skeleton {
+    animation: none !important;
+  }
+}
+

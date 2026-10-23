@@ -9,6 +9,7 @@ import { FullPageLoader } from '../components/Loader';
 import { DocWorkspace } from './DocWorkspace';
 import './editor.css';
 import { useFavicon } from '../lib/favicon';
+import { SupportLinks } from '../components/SupportLink';
 
 type State =
   | { status: 'loading' }
@@ -56,6 +57,7 @@ export function DocumentProblem({ kind, message }: { kind: 'forbidden' | 'not_fo
         <Link to="/" className="elum-btn elum-btn--primary">
           Go to your documents
         </Link>
+        {kind === 'other' && <SupportLinks app="write" code="open-failed" message={message} />}
       </div>
     </div>
   );

@@ -31,5 +31,20 @@
 @keyframes loader-in {
   from {
     opacity: 0;
+    scale: 0.92;
+  }
+}
+.full-page-loader .muted {
+  animation: loader-breathe 2.4s ease-in-out infinite;
+}
+@keyframes loader-breathe {
+  50% {
+    opacity: 0.55;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .full-page-loader,
+  .full-page-loader .muted {
+    animation: none;
   }
 }

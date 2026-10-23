@@ -1,7 +1,7 @@
 import { EllipsisVertical, Files, LayoutGrid, LayoutList, Plus, Search, User, Users, X, type LucideIcon } from 'lucide-react';
 import { OpenIcon, RenameIcon } from '../components/icons/ElumIcons';
 import { DeleteIcon, DuplicateIcon, SignOutIcon } from '../components/icons/ElumIcons';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { api, errorMessage, type DocumentFilter, type DocumentSummary } from '../api';
 import { buildPreview, emptyDocument } from '../api/content';
@@ -103,7 +103,7 @@ export function HomePage() {
       const doc = await api.createDocument(template ? { title: template.title, content: template.content() } : { content: emptyDocument() });
       navigate(`/d/${doc.id}`);
     } catch (e) {
-      toast(errorMessage(e), { tone: 'error' });
+      toast(errorMessage(e), { tone: 'error', cause: e, code: 'documents-failed' });
       setCreating(false);
     }
   };
@@ -114,7 +114,7 @@ export function HomePage() {
       toast(`Made a copy of “${doc.title}”`, { tone: 'success', action: { label: 'Open', onClick: () => navigate(`/d/${copy.id}`) } });
       void load();
     } catch (e) {
-      toast(errorMessage(e), { tone: 'error' });
+      toast(errorMessage(e), { tone: 'error', cause: e, code: 'documents-failed' });
     }
   };
 
@@ -124,7 +124,7 @@ export function HomePage() {
       toast(`Removed “${doc.title}” from your documents`);
       void load();
     } catch (e) {
-      toast(errorMessage(e), { tone: 'error' });
+      toast(errorMessage(e), { tone: 'error', cause: e, code: 'documents-failed' });
     }
   };
 
@@ -261,9 +261,17 @@ export function HomePage() {
             </button>
           </div>
         ) : !visible ? (
-          <div className="empty-state">
-            <Loader label="Loading your documents" />
-          </div>
+          <ul className="doc-grid doc-grid--loading" role="status" aria-label="Loading your documents">
+            {Array.from({ length: 6 }, (_, i) => (
+              <li key={i} className="doc-card doc-card--skeleton" aria-hidden="true">
+                <span className="skeleton skeleton--thumb" />
+                <span className="doc-card__body">
+                  <span className="skeleton skeleton--line" />
+                  <span className="skeleton skeleton--line skeleton--short" />
+                </span>
+              </li>
+            ))}
+          </ul>
         ) : visible.length === 0 ? (
           <div className="empty-state">
             <DocIcon size={72} />
@@ -289,8 +297,8 @@ export function HomePage() {
           </div>
         ) : view === 'grid' ? (
           <ul className="doc-grid">
-            {visible.map((doc) => (
-              <li key={doc.id} className="doc-card">
+            {visible.map((doc, i) => (
+              <li key={doc.id} className="doc-card" style={{ '--i': Math.min(i, 12) } as CSSProperties}>
                 <Link to={`/d/${doc.id}`} className="doc-card__link">
                   <DocThumbnail blocks={doc.preview} />
                   <span className="doc-card__body">
@@ -389,7 +397,7 @@ export function HomePage() {
                   toast(`Deleted “${doc.title}”`);
                   void load();
                 } catch (e) {
-                  toast(errorMessage(e), { tone: 'error' });
+                  toast(errorMessage(e), { tone: 'error', cause: e, code: 'documents-failed' });
                 }
               }}
             >

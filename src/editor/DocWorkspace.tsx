@@ -191,7 +191,7 @@ export function DocWorkspace({ initialDoc, initialComments }: Props) {
       setTitle(summary.title);
     } catch (e) {
       setTitle(doc.title);
-      toast(errorMessage(e), { tone: 'error' });
+      toast(errorMessage(e), { tone: 'error', cause: e, code: 'document-failed' });
     }
   };
 
@@ -213,7 +213,7 @@ export function DocWorkspace({ initialDoc, initialComments }: Props) {
           .run();
         if (at !== undefined) at += 1;
       } catch (e) {
-        toast(errorMessage(e), { tone: 'error' });
+        toast(errorMessage(e), { tone: 'error', cause: e, code: 'document-failed' });
       } finally {
         setUploads((n) => n - 1);
       }
@@ -263,7 +263,7 @@ export function DocWorkspace({ initialDoc, initialComments }: Props) {
       setComments((list) => [...list, thread]);
       setActiveComment(id);
     } catch (e) {
-      toast(errorMessage(e), { tone: 'error' });
+      toast(errorMessage(e), { tone: 'error', cause: e, code: 'document-failed' });
     }
   };
 
@@ -331,7 +331,7 @@ export function DocWorkspace({ initialDoc, initialComments }: Props) {
       const created = await api.createDocument({ content: emptyDocument() });
       navigate(`/d/${created.id}`);
     } catch (e) {
-      toast(errorMessage(e), { tone: 'error' });
+      toast(errorMessage(e), { tone: 'error', cause: e, code: 'document-failed' });
     }
   };
 
@@ -341,7 +341,7 @@ export function DocWorkspace({ initialDoc, initialComments }: Props) {
       const copy = await api.duplicateDocument(doc.id);
       toast(`Made “${copy.title}”`, { tone: 'success', action: { label: 'Open', onClick: () => navigate(`/d/${copy.id}`) } });
     } catch (e) {
-      toast(errorMessage(e), { tone: 'error' });
+      toast(errorMessage(e), { tone: 'error', cause: e, code: 'document-failed' });
     }
   };
 
@@ -351,7 +351,7 @@ export function DocWorkspace({ initialDoc, initialComments }: Props) {
       else await api.leaveDocument(doc.id);
       navigate('/', { replace: true });
     } catch (e) {
-      toast(errorMessage(e), { tone: 'error' });
+      toast(errorMessage(e), { tone: 'error', cause: e, code: 'document-failed' });
     }
   };
 
@@ -359,7 +359,7 @@ export function DocWorkspace({ initialDoc, initialComments }: Props) {
     (asPdf = false) => {
       if (!editor) return;
       if (asPdf) toast('In the print window, choose “Save as PDF” as the destination.');
-      printDocument(editor, title, api).catch((e) => toast(errorMessage(e), { tone: 'error' }));
+      printDocument(editor, title, api).catch((e) => toast(errorMessage(e), { tone: 'error', cause: e, code: 'document-failed' }));
     },
     [editor, title, toast],
   );
@@ -592,7 +592,7 @@ export function DocWorkspace({ initialDoc, initialComments }: Props) {
                     try {
                       replaceThread(await api.replyToComment(doc.id, id, body));
                     } catch (e) {
-                      toast(errorMessage(e), { tone: 'error' });
+                      toast(errorMessage(e), { tone: 'error', cause: e, code: 'document-failed' });
                       throw e;
                     }
                   }}
@@ -601,7 +601,7 @@ export function DocWorkspace({ initialDoc, initialComments }: Props) {
                       replaceThread(await api.setCommentResolved(doc.id, id, resolved));
                       if (resolved && activeComment === id) setActiveComment(null);
                     } catch (e) {
-                      toast(errorMessage(e), { tone: 'error' });
+                      toast(errorMessage(e), { tone: 'error', cause: e, code: 'document-failed' });
                     }
                   }}
                   onDelete={async (id) => {
@@ -610,7 +610,7 @@ export function DocWorkspace({ initialDoc, initialComments }: Props) {
                       setComments((list) => list.filter((c) => c.id !== id));
                       editor.commands.removeCommentAnchor(id);
                     } catch (e) {
-                      toast(errorMessage(e), { tone: 'error' });
+                      toast(errorMessage(e), { tone: 'error', cause: e, code: 'document-failed' });
                     }
                   }}
                   onClose={() => setCommentsOpen(false)}
