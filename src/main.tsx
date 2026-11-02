@@ -1,5 +1,6 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
+import { ServiceBanner } from './components/ServiceBanner';
 import { App } from './App';
 import './styles/tokens.css';
 import './styles/base.css';
@@ -11,3 +12,8 @@ createRoot(document.getElementById('root')!).render(
     <App />
   </StrictMode>,
 );
+
+// Notices, incidents and maintenance from the ELUM Console, outside the app so they show on every page.
+const banner = document.createElement('div');
+document.body.appendChild(banner);
+createRoot(banner).render(<ServiceBanner service="write" />);

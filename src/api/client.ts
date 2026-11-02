@@ -1,3 +1,4 @@
+import type { ServiceState } from '../lib/platform';
 import type {
   Asset,
   CommentThread,
@@ -114,6 +115,11 @@ export interface ElumApi {
   resolveAssetUrl(src: string): Promise<string>;
   /** The raw bytes behind an image `src`, used for downloads and exports. */
   fetchAsset(src: string): Promise<Blob>;
+
+  /** The ELUM apps this account has added (in ELUM Store). Null when signed out, or unknown. */
+  elumApps?(): Promise<string[] | null>;
+  /** This app as the ELUM Console set it: mode, message, open incidents and flags. */
+  serviceState?(service: string): Promise<ServiceState | null>;
 }
 
 export interface NotificationsApi {
