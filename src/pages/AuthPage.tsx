@@ -27,7 +27,7 @@ export function AuthPage({ mode }: { mode: Mode }) {
   const [handle, setHandle] = useState('');
   const [recovery, setRecovery] = useState('');
   const [handleState, setHandleState] = useState<HandleState>({ kind: 'idle' });
-  const [typeDomain, setTypeDomain] = useState('type.elum.services');
+  const [typeDomain, setTypeDomain] = useState('elum.space');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);

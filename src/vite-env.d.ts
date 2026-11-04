@@ -7,7 +7,7 @@ interface ImportMetaEnv {
   readonly VITE_SUPABASE_URL?: string;
   /** Supabase anon (publishable) key. Safe in the browser; row level security protects the data. */
   readonly VITE_SUPABASE_ANON_KEY?: string;
-  /** Parent domain shared by every ELUM service, such as .elum.services. Shares one sign-in across them. */
+  /** Parent domain shared by every ELUM service, such as .elum.space. Shares one sign-in across them. */
   readonly VITE_ELUM_COOKIE_DOMAIN?: string;
   /** ELUM Account, such as https://accountsbyelum.netlify.app. Set, signing in and account changes go there. */
   readonly VITE_ELUM_ACCOUNT_URL?: string;
