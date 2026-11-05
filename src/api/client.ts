@@ -37,6 +37,8 @@ export interface ElumApi {
   restoreSession(): Promise<Session | null>;
   signUp(input: SignUpInput): Promise<Session>;
   signIn(input: SignInInput): Promise<Session>;
+  /** Signs in with a passkey. Only on ELUM's own domain (elum.space), where passkeys work. */
+  signInWithPasskey?(): Promise<Session>;
   signOut(): Promise<void>;
   updateProfile(input: { name: string }): Promise<User>;
   /** Settings saved with the account (custom colours, spelling dictionary), so they follow the person. */
