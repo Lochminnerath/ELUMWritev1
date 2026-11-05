@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { SupabaseApi } from './SupabaseApi';
 
 /** Just enough of a Supabase client to see what signing up and in with a Type address does. */
-function fakeClient({ domain = 'type.elum.services', signupError }: { domain?: string | null; signupError?: { code: string; message: string } } = {}) {
+function fakeClient({ domain = 'elum.space', signupError }: { domain?: string | null; signupError?: { code: string; message: string } } = {}) {
   const calls = { signIn: [] as string[], invoked: [] as { name: string; body: Record<string, unknown> }[] };
   const client = {
     rpc: async (name: string, args?: { p_handle?: string }) => {
@@ -41,7 +41,7 @@ describe('ELUM Type addresses in Write', () => {
     expect(calls.invoked).toEqual([
       { name: 'type-signup', body: { handle: 'fen', name: 'Fen Field', password: 'long-password', recoveryEmail: 'fen@example.org' } },
     ]);
-    expect(calls.signIn).toEqual(['fen@type.elum.services']);
+    expect(calls.signIn).toEqual(['fen@elum.space']);
   });
 
   it('shows the server\'s reason when the name is taken', async () => {

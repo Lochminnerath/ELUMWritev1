@@ -63,7 +63,7 @@ export interface ElumApi {
   takeLinkProblem?(): string | null;
 
   // ELUM Type addresses. Only on the platform backend (Supabase), where type-signup creates them.
-  /** The domain Type addresses live on, such as type.elum.services. */
+  /** The domain Type addresses live on, such as elum.space. */
   typeDomain?(): Promise<string>;
   /** Whether a Type address name is free. */
   handleAvailable?(handle: string): Promise<boolean>;

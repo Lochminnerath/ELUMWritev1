@@ -122,7 +122,7 @@ const FORMER_MEMBER: PublicUser = { id: '', name: 'Former member', email: '', co
 const person = (p: PublicUser | null): PublicUser => p ?? FORMER_MEMBER;
 
 /** Where Type addresses live when the database cannot say (older databases). */
-const DEFAULT_TYPE_DOMAIN = 'type.elum.services';
+const DEFAULT_TYPE_DOMAIN = 'elum.space';
 
 /** The error an edge function answered with, such as type-signup's "That name is taken." */
 async function functionError(error: unknown): Promise<ApiError> {
@@ -189,7 +189,7 @@ export class SupabaseApi implements ElumApi {
   private linkProblem: string | null = null;
 
   constructor(url: string, anonKey: string, client?: SupabaseClient) {
-    // With VITE_ELUM_COOKIE_DOMAIN set (such as .elum.services), the session lives in cookies on
+    // With VITE_ELUM_COOKIE_DOMAIN set (such as .elum.space), the session lives in cookies on
     // that domain, so one sign-in covers every ELUM service. Otherwise it stays in this site's storage.
     const cookieDomain = typeof location === 'undefined' ? null : usableCookieDomain(import.meta.env.VITE_ELUM_COOKIE_DOMAIN, location.hostname);
     this.sb =
