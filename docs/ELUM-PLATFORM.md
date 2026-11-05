@@ -42,7 +42,7 @@ the kit and does not repeat it.
 
 ## 1. The family and the rules
 
-ELUM makes everyday work tools built by people that run without AI: **Write** (documents),
+ELUM makes everyday work tools that run without AI, for work made by you: **Write** (documents),
 **Type** (messaging and email), **Browse** (search), **Make** (graphs, design, software) and
 **Store** (files). Every product name ends in "e"; keep that for new ones.
 

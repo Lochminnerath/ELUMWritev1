@@ -18,7 +18,7 @@ change happens in one place.
   and what you can do ("You can comment · from Ada Okafor").
 - **Comments** appear as a quote with the apricot rule used for comments in the app.
 - **Codes** are large, spaced, in IBM Plex Mono on `elum-mist`.
-- **Footer:** the ELUM mark, "Built by people. Runs without AI.", and one line
+- **Footer:** the ELUM mark, "Made by you. Runs without AI.", and one line
   saying exactly why this person got this email.
 - **Dark mode:** clients that support it get the dark surfaces, the reversed
   lockup and lighter link colours. Others get the light version, which is
