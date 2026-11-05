@@ -318,3 +318,12 @@
 .auth__notice .elum-btn {
   margin-top: 10px;
 }
+
+/* Sign in with a passkey: under the main button, with the passkey symbol. */
+.auth__passkey {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 10px;
+}
