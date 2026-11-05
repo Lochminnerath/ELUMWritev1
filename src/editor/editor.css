@@ -1325,7 +1325,7 @@
   position: fixed;
   top: 0;
   right: 0;
-  bottom: 0;
+  bottom: var(--host-badge-h);
   z-index: 40;
   width: min(380px, 100vw);
   overflow: auto;
@@ -1755,7 +1755,7 @@
     position: fixed;
     top: 0;
     left: 0;
-    bottom: 0;
+    bottom: var(--host-badge-h);
     z-index: 40;
     width: min(340px, 90vw);
     box-shadow: var(--shadow-glass);
