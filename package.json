@@ -2,7 +2,7 @@
   "name": "elum-write",
   "private": true,
   "version": "0.1.0",
-  "description": "ELUM Write: documents and writing, built by people.",
+  "description": "ELUM Write: documents and writing, made by you.",
   "type": "module",
   "scripts": {
     "dev": "vite",
