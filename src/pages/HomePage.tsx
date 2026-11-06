@@ -1,8 +1,8 @@
 import { EllipsisVertical, Files, LayoutGrid, LayoutList, Plus, Search, User, Users, X, type LucideIcon } from 'lucide-react';
 import { OpenIcon, RenameIcon } from '../components/icons/ElumIcons';
 import { DeleteIcon, DuplicateIcon, SignOutIcon } from '../components/icons/ElumIcons';
-import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'react';
-import { Link, useNavigate } from 'react-router';
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router';
 import { api, errorMessage, type DocumentFilter, type DocumentSummary } from '../api';
 import { buildPreview, emptyDocument } from '../api/content';
 import { canEdit } from '../api/roles';
@@ -39,6 +39,20 @@ const SORTS: { value: Sort; label: string }[] = [
   { value: 'modified', label: 'Last edited' },
   { value: 'title', label: 'Title' },
 ];
+
+const STARTED_KEY = 'elum.write.started';
+
+/** Whether this click from ELUM Store has not started a document yet in this tab. */
+function firstTime(click: string): boolean {
+  try {
+    const seen: string[] = JSON.parse(sessionStorage.getItem(STARTED_KEY) ?? '[]');
+    if (seen.includes(click)) return false;
+    sessionStorage.setItem(STARTED_KEY, JSON.stringify([...seen, click].slice(-50)));
+  } catch {
+    // Without storage, every visit starts one.
+  }
+  return true;
+}
 
 function readView(): View {
   try {
@@ -96,17 +110,36 @@ export function HomePage() {
     }
   };
 
-  const create = async (template?: Template) => {
+  const create = async (template?: Template, replace = false) => {
     if (creating) return;
     setCreating(true);
     try {
       const doc = await api.createDocument(template ? { title: template.title, content: template.content() } : { content: emptyDocument() });
-      navigate(`/d/${doc.id}`);
+      navigate(`/d/${doc.id}`, { replace });
     } catch (e) {
       toast(errorMessage(e), { tone: 'error', cause: e, code: 'documents-failed' });
       setCreating(false);
     }
   };
+
+  // ELUM Store's "Use in Write" opens /?template=<id>&from=<click>: start that document straight away.
+  // Each click is started once, even when Back (through sign-in) lands on the same address again.
+  const [params, setParams] = useSearchParams();
+  const asked = params.get('template');
+  const click = params.get('from');
+  const started = useRef(false);
+  useEffect(() => {
+    if (!asked || started.current) return;
+    started.current = true;
+    const t = TEMPLATES.find((x) => x.id === asked);
+    if (!t) toast('That template is not in Write. Pick one below.', { tone: 'error' });
+    if (!t || (click && !firstTime(click))) {
+      setParams({}, { replace: true });
+      return;
+    }
+    void create(t, true);
+    // Runs for the address it was opened with, not on every render.
+  }, [asked]);
 
   const duplicate = async (doc: DocumentSummary) => {
     try {
