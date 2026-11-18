@@ -114,9 +114,11 @@ describe('accounts without a profile', () => {
     expect(rpcs[0]).toBe('elum_ensure_profile');
   });
 
-  it('are told what is wrong when the database cannot make one', async () => {
+  it('get a plain message when the database cannot make one, with the details kept for support', async () => {
     const { client } = clientWithoutProfile({ ensureWorks: false });
     const api = new SupabaseApi('https://x.supabase.co', 'anon', client);
-    await expect(api.signIn({ email: 'lee@example.org', password: 'long-password' })).rejects.toThrow(/missing its profile/);
+    const error = await api.signIn({ email: 'lee@example.org', password: 'long-password' }).catch((e) => e);
+    expect(error.message).toBe('Something went wrong. Please try again.');
+    expect(error.detail).toMatch(/missing its profile/);
   });
 });
